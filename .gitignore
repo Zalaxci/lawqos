@@ -22,3 +22,6 @@ frontend/*.local
 *.njsproj
 *.sln
 *.sw?
+
+# Dictionaries
+dictionaries
