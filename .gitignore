@@ -12,6 +12,13 @@ frontend/dist
 frontend/dist-ssr
 frontend/*.local
 
+# Go binaries
+backend
+app
+
+# Dictionaries
+dictionaries
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,6 +29,3 @@ frontend/*.local
 *.njsproj
 *.sln
 *.sw?
-
-# Dictionaries
-dictionaries
