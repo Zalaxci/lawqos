@@ -1,43 +1,47 @@
 package logic
 
 import (
-	"fmt"
 	"log"
+	"sort"
 	"strings"
 
-	"github.com/antchfx/xmlquery"
-	"github.com/samber/lo"
+	"github.com/beevik/etree"
 )
 
-func removeCharacters(input string, characters string) string {
-	filter := func(r rune) rune {
-		if !strings.ContainsRune(characters, r) {
-			return r
+func FreeDictFile(language string) *etree.Document {
+	xmlDocument := etree.NewDocument()
+	fileErr := xmlDocument.ReadFromFile("./dictionaries/freedict/" + language + "/" + language + ".tei")
+	if fileErr != nil {
+		log.Fatal(fileErr)
+	}
+	return xmlDocument
+}
+func FreeDictSearch(xmlDocument *etree.Document, query string) *etree.Document {
+	elementMap := make(map[int]*etree.Element)
+	mapKeys := make([]int, 0)
+	for _, element := range xmlDocument.FindElements(`//entry`) {
+		if orthElement := element.FindElement("form/orth"); orthElement != nil && strings.Contains(orthElement.Text(), query) {
+			orthography := orthElement.Text()
+			lengthDifference := len(orthography) - len(query)
+			key := 100*lengthDifference + len(elementMap)
+			elementMap[key] = element
+			mapKeys = append(mapKeys, key)
+			continue
 		}
-		return -1
+		if pronElement := element.FindElement("form/pron"); pronElement != nil && strings.Contains(pronElement.Text(), query) {
+			pronounciation := pronElement.Text()
+			lengthDifference := len(pronounciation) - len(query)
+			key := 100*lengthDifference + len(elementMap)
+			elementMap[key] = element
+			mapKeys = append(mapKeys, key)
+			continue
+		}
 	}
-	return strings.Map(filter, input)
-}
-func FreeDictSearch(xmlDocument *xmlquery.Node, query string) []*xmlquery.Node {
-	cleanQuery := removeCharacters(query, `"/\()[]{}`)
-	return xmlquery.Find(
-		xmlDocument,
-		fmt.Sprintf(`
-			//entry[
-				form/orth[contains(text(), "%[1]s")] | sense/cit/quote[contains(text(), "%[1]s")]
-			]
-		`, cleanQuery),
-	)
-}
-func FreeDictLoadAndSearch(language string, query string) string {
-	xmlDocument, closeFile := ParseXML("./dictionaries/freedict/" + language + "/" + language + ".tei")
-	xmlData := FreeDictSearch(xmlDocument, query)
-	xmlString := lo.Reduce(xmlData, func(aggregator string, xmlEntry *xmlquery.Node, _ int) string {
-		return aggregator + xmlEntry.OutputXML(true)
-	}, "")
-	closeErr := closeFile()
-	if closeErr != nil {
-		log.Fatal(closeErr)
+	sort.Ints(mapKeys)
+	finalDocument := etree.NewDocument()
+	dictionary := finalDocument.CreateElement("dictionary")
+	for _, key := range mapKeys {
+		dictionary.AddChild(elementMap[key])
 	}
-	return "<dictionary>" + xmlString + "</dictionary>"
+	return finalDocument
 }

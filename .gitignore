@@ -13,8 +13,9 @@ frontend/dist-ssr
 frontend/*.local
 
 # Go binaries
-backend
 app
+backend
+server
 cmd/wasm/*.wasm
 
 # Dictionaries

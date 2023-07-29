@@ -7,7 +7,12 @@ import (
 )
 
 func search(c echo.Context) error {
-	xmlString := logic.FreeDictLoadAndSearch("ell-jpn", c.Param("query"))
+	freeDictFile := logic.FreeDictFile("ell-jpn")
+	finalDocument := logic.FreeDictSearch(freeDictFile, c.Param("query"))
+	xmlString, error := finalDocument.WriteToString()
+	if error != nil {
+		return error
+	}
 	return c.XMLBlob(200, []byte(xmlString))
 }
 func main() {
