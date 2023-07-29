@@ -15,6 +15,7 @@ frontend/*.local
 # Go binaries
 backend
 app
+cmd/wasm/*.wasm
 
 # Dictionaries
 dictionaries
