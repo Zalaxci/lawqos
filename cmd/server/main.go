@@ -7,8 +7,7 @@ import (
 )
 
 func search(c echo.Context) error {
-	freeDictFile := logic.FreeDictFile("ell-jpn")
-	finalDocument := logic.FreeDictSearch(freeDictFile, c.Param("query"))
+	finalDocument := logic.FreeDictSearch(logic.FreeDictFile("ell-jpn"), c.Param("query"))
 	xmlString, error := finalDocument.WriteToString()
 	if error != nil {
 		return error
