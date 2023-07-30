@@ -72,3 +72,15 @@ func Search(xmlDocument *etree.Document, query string) *etree.Document {
 	}
 	return finalDocument
 }
+func SearchString(xmlString string, query string) string {
+	xmlDocument := etree.NewDocument()
+	fileErr := xmlDocument.ReadFromString(xmlString)
+	if fileErr != nil {
+		return "<error>" + fileErr.Error() + "</error>"
+	}
+	resultString, searchErr := Search(xmlDocument, query).WriteToString()
+	if searchErr != nil {
+		return "<error>" + searchErr.Error() + "</error>"
+	}
+	return resultString
+}
