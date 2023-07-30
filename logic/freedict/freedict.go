@@ -1,4 +1,4 @@
-package logic
+package freedict
 
 import (
 	"log"
@@ -8,7 +8,7 @@ import (
 	"github.com/beevik/etree"
 )
 
-func FreeDictFile(language string) *etree.Document {
+func FromFile(language string) *etree.Document {
 	xmlDocument := etree.NewDocument()
 	fileErr := xmlDocument.ReadFromFile("./dictionaries/freedict/" + language + "/" + language + ".tei")
 	if fileErr != nil {
@@ -16,7 +16,7 @@ func FreeDictFile(language string) *etree.Document {
 	}
 	return xmlDocument
 }
-func FreeDictSearch(xmlDocument *etree.Document, query string) *etree.Document {
+func Search(xmlDocument *etree.Document, query string) *etree.Document {
 	elementMap := make(map[int]*etree.Element)
 	mapKeys := make([]int, 0)
 	for _, element := range xmlDocument.FindElements(`//entry`) {

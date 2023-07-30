@@ -1,13 +1,13 @@
 package main
 
 import (
-	"IxaLang/logic"
+	"IxaLang/logic/freedict"
 
 	"github.com/labstack/echo/v4"
 )
 
 func search(c echo.Context) error {
-	finalDocument := logic.FreeDictSearch(logic.FreeDictFile("ell-jpn"), c.Param("query"))
+	finalDocument := freedict.Search(freedict.FromFile("ell-jpn"), c.Param("query"))
 	xmlString, error := finalDocument.WriteToString()
 	if error != nil {
 		return error

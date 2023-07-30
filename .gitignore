@@ -12,10 +12,11 @@ frontend/dist
 frontend/dist-ssr
 frontend/*.local
 
-# Go binaries
+# Go binaries & temp files
 app
 backend
 server
+tmp
 cmd/wasm/*.wasm
 
 # Dictionaries
