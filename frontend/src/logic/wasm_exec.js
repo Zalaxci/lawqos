@@ -4,7 +4,7 @@
 //
 // This file has been modified for use by the TinyGo compiler.
 
-(() => {
+export default () => {
 	// Map multiple JavaScript environments to a single common API,
 	// preferring web standards over Node.js API.
 	//
@@ -532,4 +532,4 @@
 			process.exit(1);
 		});
 	}
-})();
+}

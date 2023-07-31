@@ -17,7 +17,7 @@ app
 backend
 server
 tmp
-cmd/wasm/*.wasm
+*.wasm
 
 # Dictionaries
 dictionaries

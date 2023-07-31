@@ -11,6 +11,6 @@ func main() {
 	<-wait
 }
 
-func searchXMLString(this js.Value, args []js.Value) interface{} {
+func searchXMLString(this js.Value, args []js.Value) any {
 	return freedict.SearchString(args[0].String(), args[1].String())
 }
