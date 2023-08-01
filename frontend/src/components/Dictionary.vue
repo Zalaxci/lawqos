@@ -37,11 +37,13 @@ watch(userInput, async (newValue) => {
 	if (getByteLength(newValue) > 2) {
 		console.log('Fetching API...')
 		const apiResponse = await fetch('/search/' + newValue)
-		apiData.xml = await apiResponse.text()
-		apiData.query = newValue
-		return null
+		if (apiResponse.ok) {
+			apiData.xml = await apiResponse.text()
+			apiData.query = newValue
+			return null
+		}
 	}
-	// If user input is too small just empty the page
+	// If user input is too small or there is an API error just empty the page
 	apiData.xml = '<dictionary></dictionary>'
 	apiData.query = ''
 })
