@@ -4,7 +4,7 @@
 </template>
 
 <script setup>
-import { computed, ref, reactive } from 'vue'
+import { computed, ref, reactive, watch } from 'vue'
 import tinygoWASM from '../logic/wasm_exec.js'
 import entriesXSLT from './Entries.xsl?raw'
 
@@ -28,6 +28,28 @@ const filteredHTML = computed(
 	)
 )
 
+watch(userInput, async (newValue) => {
+	// If API has already been fetched and the new input contains the old one just filter present data
+	if (getByteLength(apiData.query) > 2 && newValue.includes(apiData.query)) {
+		return null
+	}
+	// If user input is long enough but does not contain the old one, fetch API
+	if (getByteLength(newValue) > 2) {
+		console.log('Fetching API...')
+		const apiResponse = await fetch('/search/' + newValue)
+		apiData.xml = await apiResponse.text()
+		apiData.query = newValue
+		return null
+	}
+	// If user input is too small just empty the page
+	apiData.xml = '<dictionary></dictionary>'
+	apiData.query = ''
+})
+
+// Return the ammount of bytes a string takes up; useful cause there's more bytes per character for languages with many characters
+function getByteLength(str) {
+	return new Blob([str]).size
+}
 // Transform XML string to HTML string using XSLT
 function transformXML(xmlString, xsltString) {
 	const parser = new DOMParser()
