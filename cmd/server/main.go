@@ -7,10 +7,16 @@ import (
 )
 
 func search(c echo.Context) error {
-	finalDocument := freedict.Search(freedict.FromFile("ell-jpn"), c.Param("query"))
+	finalDocument := freedict.SearchFile("ell-jpn", c.Param("query"))
+	if len(finalDocument.ChildElements()) == 0 {
+		return c.XMLBlob(500, []byte("<error>The dictionary search function returned a blank document</error>"))
+	}
 	xmlString, error := finalDocument.WriteToString()
 	if error != nil {
-		return error
+		return c.XMLBlob(500, []byte("<error>"+error.Error()+"</error>"))
+	}
+	if finalDocument.ChildElements()[0].Tag == "error" {
+		return c.XMLBlob(422, []byte(xmlString))
 	}
 	return c.XMLBlob(200, []byte(xmlString))
 }

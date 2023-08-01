@@ -8,6 +8,12 @@ import (
 	"github.com/beevik/etree"
 )
 
+func createXMLError(errorText string) *etree.Document {
+	document := etree.NewDocument()
+	errorElement := document.CreateElement("error")
+	errorElement.CreateText(errorText)
+	return document
+}
 func elementThatContains(elements []*etree.Element, query string) *etree.Element {
 	for _, element := range elements {
 		if element != nil && strings.Contains(element.Text(), query) {
@@ -44,24 +50,28 @@ func Search(xmlDocument *etree.Document, query string) *etree.Document {
 			[]*etree.Element{element.FindElement("form/orth"), element.FindElement("form/pron")},
 			query,
 		)
-		if matchingElement != nil {
-			matchingText := matchingElement.Text()
-			lengthDifference := len(matchingText) - len(query)
-			key := 100*lengthDifference + len(mapKeys)
-			elementMap[key] = element
-			mapKeys = append(mapKeys, key)
+		matchesTargetLang := false
+		if matchingElement == nil {
+			matchingElement = elementThatContains(
+				element.FindElements("sense/cit/quote"),
+				query,
+			)
+			matchesTargetLang = true
+		}
+		if matchingElement == nil {
 			continue
 		}
-		reverseMatch := elementThatContains(
-			element.FindElements("sense/cit/quote"),
-			query,
-		)
-		if reverseMatch != nil {
-			matchingText := reverseMatch.Text()
-			lengthDifference := len(matchingText) - len(query)
-			key := 100*lengthDifference + len(mapKeys)
+		matchingText := matchingElement.Text()
+		lengthDifference := len(matchingText) - len(query)
+		key := 100*lengthDifference + len(mapKeys)
+		if matchesTargetLang {
 			elementMap[key] = reverseTranslation(element, matchingText)
-			mapKeys = append(mapKeys, key)
+		} else {
+			elementMap[key] = element
+		}
+		mapKeys = append(mapKeys, key)
+		if len(mapKeys) >= 50 {
+			return createXMLError("Amount of entries exceeded the maximum of 50!")
 		}
 	}
 	sort.Ints(mapKeys)
@@ -72,7 +82,16 @@ func Search(xmlDocument *etree.Document, query string) *etree.Document {
 	}
 	return finalDocument
 }
+func SearchFile(language string, query string) *etree.Document {
+	if len(query) <= 2 {
+		return createXMLError("Search query is smaller than the minimum of 3 bytes")
+	}
+	return Search(FromFile(language), query)
+}
 func SearchString(xmlString string, query string) string {
+	if len(query) <= 2 {
+		return "<error>Search query is smaller than the minimum of 3 bytes</error>"
+	}
 	xmlDocument := etree.NewDocument()
 	fileErr := xmlDocument.ReadFromString(xmlString)
 	if fileErr != nil {
