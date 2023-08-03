@@ -4,9 +4,11 @@
 </template>
 
 <script setup>
-import { computed, ref, reactive, watch } from 'vue'
+import { ref } from 'vue'
+import { computedEager, useFetch } from '@vueuse/core'
 import tinygoWASM from '../logic/wasm_exec.js'
 import entriesXSLT from './Entries.xsl?raw'
+import errorXSLT from './Error.xsl?raw'
 
 // Load WASM
 tinygoWASM()
@@ -15,43 +17,51 @@ const wasmObject = await WebAssembly.instantiateStreaming(fetch('xmlParser.wasm'
 const wasmInstance = wasmObject.instance
 go.run(wasmInstance)
 
+// Define global constants
+const apiEndpoint = "/search"
+const minimumBytes = 3
+const maximumChars = 4
+
 // Now create VUE variables
 const userInput = ref('')
-const apiData = reactive({
-	query: '',
-	xml: '<dictionary></dictionary>'
+const inputByteLength = computedEager(
+	() => new TextEncoder().encode(userInput.value).length
+)
+const apiURL = computedEager(
+	() => {
+		if (userInput.value.length <= maximumChars) {
+			return apiEndpoint + '/' + userInput.value
+		}
+		return apiEndpoint + '/' + userInput.value.substring(0, maximumChars)
+	}
+)
+const { data, error } = useFetch(apiURL, {
+	refetch: true,
+	beforeFetch({ cancel }) {
+		if (inputByteLength.value < minimumBytes) {
+			console.log('User input too small, cancelling API request')
+			cancel()
+		} else {
+			console.log('Fetching API...')
+		}
+	},
+	onFetchError(ctx) {
+		ctx.error = ctx.data
+		return ctx
+	}
 })
-const filteredHTML = computed(
-	() => transformXML(
-		searchXMLString(apiData.xml, userInput.value),
-		entriesXSLT
-	)
+const filteredHTML = computedEager(
+	() => {
+		if (data.value) {
+			return transformXML(searchXMLString(data.value, userInput.value), entriesXSLT)
+		}
+		if (error.value) {
+			return transformXML(error.value, errorXSLT)
+		}
+		return ''
+	}
 )
 
-watch(userInput, async (newValue) => {
-	// If API has already been fetched and the new input contains the old one just filter present data
-	if (getByteLength(apiData.query) > 2 && newValue.includes(apiData.query)) {
-		return null
-	}
-	// If user input is long enough but does not contain the old one, fetch API
-	if (getByteLength(newValue) > 2) {
-		console.log('Fetching API...')
-		const apiResponse = await fetch('/search/' + newValue)
-		if (apiResponse.ok) {
-			apiData.xml = await apiResponse.text()
-			apiData.query = newValue
-			return null
-		}
-	}
-	// If user input is too small or there is an API error just empty the page
-	apiData.xml = '<dictionary></dictionary>'
-	apiData.query = ''
-})
-
-// Return the ammount of bytes a string takes up; useful cause there's more bytes per character for languages with many characters
-function getByteLength(str) {
-	return new Blob([str]).size
-}
 // Transform XML string to HTML string using XSLT
 function transformXML(xmlString, xsltString) {
 	const parser = new DOMParser()
