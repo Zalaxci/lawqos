@@ -28,12 +28,7 @@ const inputByteLength = computedEager(
 	() => new TextEncoder().encode(userInput.value).length
 )
 const apiURL = computedEager(
-	() => {
-		if (userInput.value.length <= maximumChars) {
-			return apiEndpoint + '/' + userInput.value
-		}
-		return apiEndpoint + '/' + userInput.value.substring(0, maximumChars)
-	}
+	() => apiEndpoint + '/' + userInput.value.substring(0, maximumChars)
 )
 const { data, error } = useFetch(apiURL, {
 	refetch: true,
