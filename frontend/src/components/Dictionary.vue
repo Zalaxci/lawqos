@@ -1,7 +1,42 @@
 <template>
 	<input v-model="userInput" type="text" name="search" value="" placeholder="Search a word">
-	<div v-html="filteredHTML"></div>
+	<div id="dictionary" v-html="filteredHTML"></div>
 </template>
+
+<style>
+#dictionary:not(:empty) {
+	flex-grow: 1;
+}
+.flex-wrap {
+	display: flex;
+	flex-wrap: wrap;
+	place-content: center;
+}
+.entry {
+	width: min(100%, 400px);
+	margin: 1rem;
+	padding: 0.5rem;
+	border-radius: 1rem;
+	background: linear-gradient(to bottom right, rgba(169, 148, 141, 0.5), rgba(215, 135, 105, 0.5));
+}
+.entry h2 {
+	text-transform: capitalize;
+}
+.entry ol {
+	padding: 0;
+	margin: 0;
+	list-style-position: inside;
+}
+.entry li {
+	width: 100%;
+}
+rt {
+	font-size: small;
+}
+.word + .word::before {
+	content: ', '
+}
+</style>
 
 <script setup>
 import { ref } from 'vue'
@@ -32,10 +67,12 @@ const apiURL = computedEager(
 )
 const { data, error } = useFetch(apiURL, {
 	refetch: true,
-	beforeFetch({ cancel }) {
+	beforeFetch(ctx) {
 		if (inputByteLength.value < minimumBytes) {
 			console.log('User input too small, cancelling API request')
-			cancel()
+			ctx.cancel()
+			ctx.data = ctx.error = null
+			return ctx
 		} else {
 			console.log('Fetching API...')
 		}
