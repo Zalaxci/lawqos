@@ -14,13 +14,8 @@
   -webkit-text-size-adjust: 100%;
 }
 
-.flex-col {
-	display: flex;
-	flex-direction: column;
-}
-.flex-row {
-	display: flex;
-	justify-content: space-between;
+.no-margin-top {
+	margin-top: 0;
 }
 
 * {

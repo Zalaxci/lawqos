@@ -1,5 +1,6 @@
 <template>
-	<h1>IxaLang Dictionary</h1>
+	<p>Ixalaz + Languages =</p>
+	<h1 class="no-margin-top">IxaLang</h1>
 	<Suspense>
 		<Dictionary/>
 		<template #fallback>
