@@ -6,7 +6,7 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 	<div class="flex-wrap">
 		<xsl:for-each select="entry">
 			<div class="entry">
-				<ruby><h2><xsl:value-of select="form/orth"/></h2> <rt><xsl:value-of select="form/pron"/></rt></ruby>:
+				<ruby><h2><xsl:value-of select="form/orth"/>:</h2> <rt><xsl:value-of select="form/pron"/></rt></ruby>
 				<ol>
 					<xsl:for-each select="sense">
 						<li>
