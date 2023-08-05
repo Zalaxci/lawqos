@@ -14,7 +14,7 @@
 	min-height: 100vh;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2vw;
 	display: flex;
 	flex-direction: column;
 	place-content: center;

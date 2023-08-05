@@ -5,6 +5,7 @@
 
 <style>
 #dictionary:not(:empty) {
+	width: 100%;
 	flex-grow: 1;
 }
 .flex-wrap {
