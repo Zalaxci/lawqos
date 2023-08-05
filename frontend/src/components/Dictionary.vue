@@ -72,8 +72,7 @@ const { data, error } = useFetch(apiURL, {
 		if (inputByteLength.value < minimumBytes) {
 			console.log('User input too small, cancelling API request')
 			ctx.cancel()
-			ctx.data = ctx.error = null
-			return ctx
+			clearAPI()
 		} else {
 			console.log('Fetching API...')
 		}
@@ -95,6 +94,11 @@ const filteredHTML = computedEager(
 	}
 )
 
+// Set data and error to null when the request is cancelled
+function clearAPI() {
+	data.value = null
+	error.value = null
+}
 // Transform XML string to HTML string using XSLT
 function transformXML(xmlString, xsltString) {
 	const parser = new DOMParser()
