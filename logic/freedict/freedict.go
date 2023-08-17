@@ -1,19 +1,26 @@
 package freedict
 
 import (
-	"log"
+	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/beevik/etree"
 )
 
-func createXMLError(errorText string) *etree.Document {
-	document := etree.NewDocument()
-	errorElement := document.CreateElement("error")
-	errorElement.CreateText(errorText)
-	return document
+type DictionaryError struct {
+	UserError bool
+	Reason    string
+	Place     string
 }
+
+func (err DictionaryError) Error() string {
+	if err.UserError {
+		return "User error at " + err.Place + ": " + err.Reason
+	}
+	return "Program error at " + err.Place + ": " + err.Reason
+}
+
 func elementThatContains(elements []*etree.Element, query string) *etree.Element {
 	for _, element := range elements {
 		if element != nil && strings.Contains(element.Text(), query) {
@@ -34,15 +41,36 @@ func reverseTranslation(element *etree.Element, word string) *etree.Element {
 	translation.CreateText(element.FindElement("form/orth").Text())
 	return newElement
 }
-func FromFile(language string) *etree.Document {
-	xmlDocument := etree.NewDocument()
-	fileErr := xmlDocument.ReadFromFile("./dictionaries/freedict/" + language + "/" + language + ".tei")
+func FromFile(language, folderPath string) (xmlDocument *etree.Document) {
+	xmlDocument = etree.NewDocument()
+	fileErr := xmlDocument.ReadFromFile(filepath.Join(folderPath, language+".tei"))
 	if fileErr != nil {
-		log.Fatal(fileErr)
+		panic(DictionaryError{
+			UserError: false,
+			Reason:    fileErr.Error(),
+			Place:     "dictionary file loader",
+		})
 	}
-	return xmlDocument
+	return
+}
+func FromFileOrOnline(language, folderPath string, downloadFile func(language, folderPath string)) (xmlDocument *etree.Document) {
+	defer func() {
+		if r := recover(); r != nil {
+			downloadFile(language, folderPath)
+			xmlDocument = FromFile(language, folderPath)
+		}
+	}()
+	xmlDocument = FromFile(language, folderPath)
+	return
 }
 func Search(xmlDocument *etree.Document, query string) *etree.Document {
+	if len(query) < 3 {
+		panic(DictionaryError{
+			UserError: true,
+			Reason:    "search query is smaller than the minimum of 3 bytes",
+			Place:     "dictionary search",
+		})
+	}
 	elementMap := make(map[int]*etree.Element)
 	mapKeys := make([]int, 0)
 	for _, element := range xmlDocument.FindElements(`//entry`) {
@@ -71,7 +99,11 @@ func Search(xmlDocument *etree.Document, query string) *etree.Document {
 		}
 		mapKeys = append(mapKeys, key)
 		if len(mapKeys) >= 50 {
-			return createXMLError("Amount of entries exceeded the maximum of 50!")
+			panic(DictionaryError{
+				UserError: false,
+				Reason:    "amount of entries exceeded the maximum of 50",
+				Place:     "dictionary search",
+			})
 		}
 	}
 	sort.Ints(mapKeys)
@@ -82,24 +114,23 @@ func Search(xmlDocument *etree.Document, query string) *etree.Document {
 	}
 	return finalDocument
 }
-func SearchFile(language string, query string) *etree.Document {
-	if len(query) <= 2 {
-		return createXMLError("Search query is smaller than the minimum of 3 bytes")
-	}
-	return Search(FromFile(language), query)
-}
 func SearchString(xmlString string, query string) string {
-	if len(query) <= 2 {
-		return "<error>Search query is smaller than the minimum of 3 bytes</error>"
-	}
 	xmlDocument := etree.NewDocument()
-	fileErr := xmlDocument.ReadFromString(xmlString)
-	if fileErr != nil {
-		return "<error>" + fileErr.Error() + "</error>"
+	parseErr := xmlDocument.ReadFromString(xmlString)
+	if parseErr != nil {
+		panic(DictionaryError{
+			UserError: false,
+			Reason:    parseErr.Error(),
+			Place:     "xml parser from string",
+		})
 	}
-	resultString, searchErr := Search(xmlDocument, query).WriteToString()
-	if searchErr != nil {
-		return "<error>" + searchErr.Error() + "</error>"
+	resultString, serializeErr := Search(xmlDocument, query).WriteToString()
+	if serializeErr != nil {
+		panic(DictionaryError{
+			UserError: false,
+			Reason:    serializeErr.Error(),
+			Place:     "xml parser from string",
+		})
 	}
 	return resultString
 }
