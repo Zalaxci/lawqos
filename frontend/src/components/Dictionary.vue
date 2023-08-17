@@ -1,4 +1,5 @@
 <template>
+	<LanguageSelector ref="languageSelector"/>
 	<input v-model="userInput" type="text" name="search" value="" placeholder="Search a word">
 	<div id="dictionary" v-html="filteredHTML"></div>
 </template>
@@ -13,7 +14,7 @@
 	flex-wrap: wrap;
 	place-content: center;
 }
-.entry {
+.entry, .colored-box {
 	width: min(100%, 400px);
 	margin: 1rem;
 	padding: 0.5rem;
@@ -45,6 +46,13 @@ import { computedEager, useFetch } from '@vueuse/core'
 import tinygoWASM from '../logic/wasm_exec.js'
 import entriesXSLT from './Entries.xsl?raw'
 import errorXSLT from './Error.xsl?raw'
+import LanguageSelector from './LanguageSelector.vue'
+
+// Language selector
+const languageSelector = ref({})
+const selectedLangPair = computedEager(
+	() => (languageSelector.value.selectedBaseLang || '') + "-" + (languageSelector.value.selectedTargetLang || '')
+)
 
 // Load WASM
 tinygoWASM()
