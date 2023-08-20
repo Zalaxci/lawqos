@@ -13,9 +13,8 @@ frontend/dist-ssr
 frontend/*.local
 
 # Go binaries & temp files
-app
-backend
-./server
+/app
+/server
 tmp
 *.wasm
 
