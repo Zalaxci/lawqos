@@ -22,12 +22,18 @@ func (storj StorjWrapper) DownloadReader(fileName string) *uplink.Download {
 	return storjReader
 }
 func (storj StorjWrapper) DownloadFile(fileName, folderPath string) {
-	file, fileErr := os.Create(folderPath + "/" + fileName)
+	storjReader := storj.DownloadReader(fileName)
+	file, fileErr := os.Create(folderPath + "/" + fileName + ".tei")
 	if fileErr != nil {
 		panic(fileErr)
 	}
-	storjReader := storj.DownloadReader(fileName)
 	file.ReadFrom(storjReader)
+}
+func (storj StorjWrapper) ForEachObject(getObject func(*uplink.Object)) {
+	iterator := storj.project.ListObjects(storj.ctx, storj.bucketName, nil)
+	for iterator.Next() {
+		getObject(iterator.Item())
+	}
 }
 func OpenProject(bucketName string) StorjWrapper {
 	envErr := godotenv.Load()

@@ -3,8 +3,10 @@ package main
 import (
 	"IxaLang/logic/freedict"
 	"IxaLang/logic/storj"
+	"strings"
 
 	"github.com/labstack/echo/v4"
+	"storj.io/uplink"
 )
 
 const dictionaryDir = "./dictionaries"
@@ -22,7 +24,7 @@ func search(c echo.Context, storj storj.StorjWrapper) (serverError error) {
 			}
 		}
 	}()
-	xmlDocument := freedict.FromFileOrOnline("ell-jpn", dictionaryDir, storj.DownloadFile)
+	xmlDocument := freedict.FromFileOrOnline(c.Param("lang"), dictionaryDir, storj.DownloadFile)
 	finalDocument := freedict.Search(xmlDocument, c.Param("query"))
 	if len(finalDocument.ChildElements()) == 0 {
 		panic(freedict.ProgramError{
@@ -40,11 +42,35 @@ func search(c echo.Context, storj storj.StorjWrapper) (serverError error) {
 	serverError = c.XMLBlob(200, []byte(xmlString))
 	return
 }
+func list(c echo.Context, storj storj.StorjWrapper) (serverError error) {
+	languages := make(map[string][]string)
+	storj.ForEachObject(
+		func(obj *uplink.Object) {
+			println(obj.Key)
+			dictonaryName := obj.Key
+			languagePair := strings.Split(
+				strings.Split(dictonaryName, ".")[0],
+				"-",
+			)
+			baseLang, targetLang := languagePair[0], languagePair[1]
+			if targetLangsList, baseLangRegistered := languages[baseLang]; baseLangRegistered {
+				languages[baseLang] = append(targetLangsList, targetLang)
+			} else {
+				languages[baseLang] = []string{targetLang}
+			}
+		},
+	)
+	return c.JSONPretty(200, languages, "\t")
+}
+
 func main() {
 	storj := storj.OpenProject("ixalang")
 	echoInstance := echo.New()
-	echoInstance.GET("/search/:query", func(c echo.Context) error {
+	echoInstance.GET("/search/:lang/:query", func(c echo.Context) error {
 		return search(c, storj)
+	})
+	echoInstance.GET("/list", func(c echo.Context) error {
+		return list(c, storj)
 	})
 	echoInstance.Static("/", "./frontend/dist")
 	echoInstance.Logger.Fatal(echoInstance.Start(":8080"))
