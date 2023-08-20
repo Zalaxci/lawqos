@@ -41,7 +41,7 @@ func search(c echo.Context, storj storj.StorjWrapper) (serverError error) {
 	return
 }
 func main() {
-	storj := storj.OpenProject("ixalang", "")
+	storj := storj.OpenProject("ixalang")
 	echoInstance := echo.New()
 	echoInstance.GET("/search/:query", func(c echo.Context) error {
 		return search(c, storj)

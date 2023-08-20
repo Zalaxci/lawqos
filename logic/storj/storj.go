@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/joho/godotenv"
 	"storj.io/uplink"
 )
 
@@ -28,7 +29,12 @@ func (storj StorjWrapper) DownloadFile(fileName, folderPath string) {
 	storjReader := storj.DownloadReader(fileName)
 	file.ReadFrom(storjReader)
 }
-func OpenProject(bucketName string, accessGrant string) StorjWrapper {
+func OpenProject(bucketName string) StorjWrapper {
+	envErr := godotenv.Load()
+	if envErr != nil {
+		panic("Error loading .env file: " + envErr.Error())
+	}
+	accessGrant := os.Getenv("STORJ_ACCESS_GRANT")
 	ctx := context.Background()
 	access, accessErr := uplink.ParseAccess(accessGrant)
 	if accessErr != nil {
