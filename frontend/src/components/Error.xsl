@@ -7,3 +7,4 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 		<h3><xsl:value-of select="current()"/></h3>
 	</div>
 </xsl:template>
+</xsl:stylesheet>

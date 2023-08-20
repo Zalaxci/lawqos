@@ -8,17 +8,22 @@ import (
 	"github.com/beevik/etree"
 )
 
-type DictionaryError struct {
-	UserError bool
-	Reason    string
-	Place     string
+type ProgramError struct {
+	Reason string
+	Place  string
 }
 
-func (err DictionaryError) Error() string {
-	if err.UserError {
-		return "User error at " + err.Place + ": " + err.Reason
-	}
-	return "Program error at " + err.Place + ": " + err.Reason
+func (err ProgramError) Error() string {
+	return err.Reason + " at " + err.Place
+}
+
+type UserError struct {
+	Input string
+	Rule  string
+}
+
+func (err UserError) Error() string {
+	return "got " + err.Input + " when " + err.Rule
 }
 
 func elementThatContains(elements []*etree.Element, query string) *etree.Element {
@@ -45,10 +50,9 @@ func FromFile(language, folderPath string) (xmlDocument *etree.Document) {
 	xmlDocument = etree.NewDocument()
 	fileErr := xmlDocument.ReadFromFile(filepath.Join(folderPath, language+".tei"))
 	if fileErr != nil {
-		panic(DictionaryError{
-			UserError: false,
-			Reason:    fileErr.Error(),
-			Place:     "dictionary file loader",
+		panic(ProgramError{
+			Reason: fileErr.Error(),
+			Place:  "dictionary file loader",
 		})
 	}
 	return
@@ -65,10 +69,9 @@ func FromFileOrOnline(language, folderPath string, downloadFile func(language, f
 }
 func Search(xmlDocument *etree.Document, query string) *etree.Document {
 	if len(query) < 3 {
-		panic(DictionaryError{
-			UserError: true,
-			Reason:    "search query is smaller than the minimum of 3 bytes",
-			Place:     "dictionary search",
+		panic(UserError{
+			Input: "search query " + query,
+			Rule:  "only search queries of 3 bytes or more (3 english characters) are allowed",
 		})
 	}
 	elementMap := make(map[int]*etree.Element)
@@ -99,10 +102,9 @@ func Search(xmlDocument *etree.Document, query string) *etree.Document {
 		}
 		mapKeys = append(mapKeys, key)
 		if len(mapKeys) >= 50 {
-			panic(DictionaryError{
-				UserError: false,
-				Reason:    "amount of entries exceeded the maximum of 50",
-				Place:     "dictionary search",
+			panic(ProgramError{
+				Reason: "amount of entries exceeded the maximum of 50",
+				Place:  "dictionary search",
 			})
 		}
 	}
@@ -118,18 +120,16 @@ func SearchString(xmlString string, query string) string {
 	xmlDocument := etree.NewDocument()
 	parseErr := xmlDocument.ReadFromString(xmlString)
 	if parseErr != nil {
-		panic(DictionaryError{
-			UserError: false,
-			Reason:    parseErr.Error(),
-			Place:     "xml parser from string",
+		panic(ProgramError{
+			Reason: parseErr.Error(),
+			Place:  "xml parser from string",
 		})
 	}
 	resultString, serializeErr := Search(xmlDocument, query).WriteToString()
 	if serializeErr != nil {
-		panic(DictionaryError{
-			UserError: false,
-			Reason:    serializeErr.Error(),
-			Place:     "xml parser from string",
+		panic(ProgramError{
+			Reason: serializeErr.Error(),
+			Place:  "xml parser from string",
 		})
 	}
 	return resultString
