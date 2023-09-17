@@ -23,6 +23,10 @@ func (storj StorjWrapper) DownloadReader(fileName string) *uplink.Download {
 }
 func (storj StorjWrapper) DownloadFile(fileName, folderPath string) {
 	storjReader := storj.DownloadReader(fileName)
+	mkdirErr := os.MkdirAll(folderPath, 0770)
+	if mkdirErr != nil {
+		panic(mkdirErr)
+	}
 	file, fileErr := os.Create(folderPath + "/" + fileName + ".tei")
 	if fileErr != nil {
 		panic(fileErr)
