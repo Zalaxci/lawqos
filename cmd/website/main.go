@@ -72,6 +72,6 @@ func main() {
 	echoInstance.GET("/list", func(c echo.Context) error {
 		return list(c, storj)
 	})
-	echoInstance.Static("/", "./frontend/dist")
+	echoInstance.Static("/", "./public")
 	echoInstance.Logger.Fatal(echoInstance.Start(":8080"))
 }

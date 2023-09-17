@@ -17,6 +17,7 @@ frontend/*.local
 /server
 tmp
 *.wasm
+cmd/website/website
 
 # Dictionaries
 dictionaries
