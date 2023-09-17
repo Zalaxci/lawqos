@@ -3,7 +3,7 @@ customElements.define('ixalang-dictionary', class IxaLangDictionary extends LitE
 	#userInput = ''
 	get availableLanguagePairs() {
 		return [
-			'ell-jpn.tei'
+			'ell-jpn'
 		]
 	}
 	get minimumInputBytes() {
