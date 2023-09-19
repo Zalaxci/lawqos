@@ -7,7 +7,7 @@ const ENTRIES_XSLT = PARSER.parseFromString(`<?xml version="1.0"?>
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
 	<xsl:template match="dictionary">
-		<div class="flex-wrap">
+		<div class="entries-container">
 			<xsl:for-each select="entry">
 				<div class="entry">
 					<ruby><h2><xsl:value-of select="form/orth"/>:</h2> <rt><xsl:value-of select="form/pron"/></rt></ruby>
@@ -50,12 +50,12 @@ customElements.define('dictionary-entries', class DictionaryEntries extends LitE
 		}
 	}
 	static styles = css`
-		.flex-wrap {
+		.entries-container {
 			display: flex;
 			flex-wrap: wrap;
 			place-content: center;
 		}
-		.entry, .colored-box {
+		.entry {
 			width: min(100%, 400px);
 			margin: 1rem;
 			padding: 0.5rem;
