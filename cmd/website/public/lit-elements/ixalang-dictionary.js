@@ -10,6 +10,14 @@ customElements.define('language-picker', class LanguagePicker extends LitElement
 			state: true
 		}
 	}
+	static styles = css`
+		#language-picker {
+			font-size: 1.2em;
+		}
+		select option {
+			font-size: 1.2em !important;
+		}
+	`
 	constructor() {
 		super()
 		this._selectedBaseLang = 'ell'
@@ -25,7 +33,7 @@ customElements.define('language-picker', class LanguagePicker extends LitElement
 			this.#selectTargetLang(targetLangsForSelectedBaseLang[0])
 		}
 		return html`
-			<div class="colored-box">
+			<div id="language-picker" class="colored-box">
 				Look up a word from
 				<select name="base-lang" id="base-lang" @input=${(e) => this._selectedBaseLang = e.target.value}>
 					${Object.keys(availableTargetLangs).map(baseLang => html`
@@ -38,7 +46,9 @@ customElements.define('language-picker', class LanguagePicker extends LitElement
 						<option value=${targetLang}>${this.#getReadableLangName.of(targetLang)}</option>
 					`)}
 				</select>
+				or in reverse:
 			</div>
+			<br>
 		`
 	}
 })
