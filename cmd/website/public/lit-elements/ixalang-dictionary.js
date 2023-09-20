@@ -44,51 +44,73 @@ customElements.define('language-picker', class LanguagePicker extends LitElement
 customElements.define('ixalang-dictionary', class IxaLangDictionary extends LitElement {
 	#selectedLanguagePair = ''
 	#userInput = ''
+	#xmlPromises = [
+		'<dictionary></dictionary>'
+	]
 	get minimumInputBytes() {
 		return 3
 	}
 	get maximumInputCharacters() {
 		return 4
 	}
-	static properties = {
-		_xmlString: {
-			type: String,
-			state: true
-		}
+	get #newestXmlPromises() {
+		const promiseCount = this.#xmlPromises.length
+		return this.#xmlPromises.map((_, index) => this.#xmlPromises[promiseCount - index - 1])
 	}
+	static properties = {}
 	static styles = css`
 		dictionary-entries:not(:empty) {
 			flex-grow: 1;
 			width: 100%;
 		}
 	`
-	constructor() {
-		super()
-		this._xmlString = '<dictionary></dictionary>'
+	#trimXmlPromises() {
+		const promiseCount = this.#xmlPromises.length
+		for (let i = 0; i < promiseCount; i++) {
+			if (this.#xmlPromises[i].abort !== undefined && this.#xmlPromises[i].abort()) {
+				this.#xmlPromises.splice(i, 1)
+			}
+		}
 	}
-	async #updateXmlEntries(params) {
+	#queueXmlPromise(params) {
+		this.#trimXmlPromises()
 		if (typeof params.selectedLanguagePair === 'string') this.#selectedLanguagePair = params.selectedLanguagePair
 		if (typeof params.userInput === 'string') this.#userInput = params.userInput
 		if (howManyBytesIn(this.#userInput) < this.minimumInputBytes) return console.log('User input is too small :(')
 		const apiUrl = `/search/${this.#selectedLanguagePair}/${this.#userInput}`
 		console.log(`Fetching api at ${apiUrl}...`)
-		const apiResponse = await fetch(apiUrl)
-		this._xmlString = await apiResponse.text()
+		// This is a loophole to allow abortion of fetch requests
+		// Each promise has an abort method which returns true and aborts the promise if not resolved, or returns false if resolved
+		const abortController = new AbortController()
+		const xmlPromise = fetch(apiUrl, {
+			signal: abortController.signal
+		}).then(res => res.text())
+		xmlPromise.abort = () => {
+			abortController.abort()
+			return true
+		}
+		this.#xmlPromises.push(xmlPromise)
+		this.requestUpdate()
+		xmlPromise.then(
+			() => {
+				xmlPromise.abort = () => false
+			}
+		)
 	}
 	render() {
 		console.log('Rendering the dictionary...')
 		return html`
 			<div>
 				<language-picker
-					.selectLanguagePair=${(selectedLanguagePair) => this.#updateXmlEntries({ selectedLanguagePair })}
+					.selectLanguagePair=${(selectedLanguagePair) => this.#queueXmlPromise({ selectedLanguagePair })}
 				></language-picker>
 				<input
 					type="text"
 					name="search"
 					placeholder="Search a word"
-					@input=${(e) => this.#updateXmlEntries({ userInput: e.target.value })}
+					@input=${(e) => this.#queueXmlPromise({ userInput: e.target.value })}
 				/>
-				<dictionary-entries xmlString=${this._xmlString}></dictionary-entries>
+				<dictionary-entries xmlString=${until(...this.#newestXmlPromises)}></dictionary-entries>
 			</div>
 		`
 	}
