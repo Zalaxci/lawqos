@@ -1,5 +1,6 @@
 customElements.define('language-picker', class LanguagePicker extends LitElement {
 	#selectedTargetLang = ''
+	#getReadableLangName = new Intl.DisplayNames(['en'], {type: 'language'})
 	static properties = {
 		selectLanguagePair: {
 			type: Function
@@ -28,13 +29,13 @@ customElements.define('language-picker', class LanguagePicker extends LitElement
 				Look up a word from
 				<select name="base-lang" id="base-lang" @input=${(e) => this._selectedBaseLang = e.target.value}>
 					${Object.keys(availableTargetLangs).map(baseLang => html`
-						<option value=${baseLang}>${baseLang}</option>
+						<option value=${baseLang}>${this.#getReadableLangName.of(baseLang)}</option>
 					`)}
 				</select>
 				to
 				<select name="target-lang" id="target-lang" @input=${(e) => this.#selectTargetLang(e.target.value)}>
 					${targetLangsForSelectedBaseLang.map(targetLang => html`
-						<option value=${targetLang}>${targetLang}</option>
+						<option value=${targetLang}>${this.#getReadableLangName.of(targetLang)}</option>
 					`)}
 				</select>
 			</div>
