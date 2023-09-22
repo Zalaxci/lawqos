@@ -9,9 +9,7 @@ import (
 	"storj.io/uplink"
 )
 
-const dictionaryDir = "./dictionaries"
-
-func search(c echo.Context, storj storj.StorjWrapper) (serverError error) {
+func search(c echo.Context) (serverError error) {
 	defer func() {
 		if r := recover(); r != nil {
 			switch err := r.(type) {
@@ -24,21 +22,7 @@ func search(c echo.Context, storj storj.StorjWrapper) (serverError error) {
 			}
 		}
 	}()
-	xmlDocument := freedict.FromFileOrOnline(c.Param("lang"), dictionaryDir, storj.DownloadFile)
-	finalDocument := freedict.Search(xmlDocument, c.Param("query"))
-	if len(finalDocument.ChildElements()) == 0 {
-		panic(freedict.ProgramError{
-			Reason: "the dictionary search function returned a blank document",
-			Place:  "dictionary search",
-		})
-	}
-	xmlString, serializationErr := finalDocument.WriteToString()
-	if serializationErr != nil {
-		panic(freedict.ProgramError{
-			Reason: serializationErr.Error(),
-			Place:  "xml serialization to string",
-		})
-	}
+	xmlString := freedict.SearchFreedictDictionary(c.Param("lang"), 6, c.Param("query"))
 	serverError = c.XMLBlob(200, []byte(xmlString))
 	return
 }
@@ -67,7 +51,7 @@ func main() {
 	storj := storj.OpenProject("ixalang")
 	echoInstance := echo.New()
 	echoInstance.GET("/search/:lang/:query", func(c echo.Context) error {
-		return search(c, storj)
+		return search(c)
 	})
 	echoInstance.GET("/list", func(c echo.Context) error {
 		return list(c, storj)
