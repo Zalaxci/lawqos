@@ -87,9 +87,8 @@ customElements.define('ixalang-dictionary', class IxaLangDictionary extends LitE
 		this.#trimXmlPromises()
 		if (typeof params.selectedLanguagePair === 'string') this.#selectedLanguagePair = params.selectedLanguagePair
 		if (typeof params.userInput === 'string') this.#userInput = params.userInput
-		if (howManyBytesIn(this.#userInput) < this.minimumInputBytes) return console.log('User input is too small :(')
+		if (howManyBytesIn(this.#userInput) < this.minimumInputBytes) return
 		const apiUrl = `/search/${this.#selectedLanguagePair}/${this.#userInput}`
-		console.log(`Fetching api at ${apiUrl}...`)
 		// This is a loophole to allow abortion of fetch requests
 		// Each promise has an abort method which returns true and aborts the promise if not resolved, or returns false if resolved
 		const abortController = new AbortController()
