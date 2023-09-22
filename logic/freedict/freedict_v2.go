@@ -46,8 +46,12 @@ func SearchFreedictDictionary(languagePair string, numberOfFragments int, query 
 	var wg sync.WaitGroup
 	queryInBytes := []byte(query)
 	xmlResultsInBytes := []byte{}
+	entryOpeningTag := []byte("<entry>")
+	entryClosingTag := []byte("</entry>")
 	addResult := func(result []byte) {
+		xmlResultsInBytes = append(xmlResultsInBytes, entryOpeningTag...)
 		xmlResultsInBytes = append(xmlResultsInBytes, result...)
+		xmlResultsInBytes = append(xmlResultsInBytes, entryClosingTag...)
 	}
 	wg.Add(numberOfFragments)
 	for i := 1; i <= numberOfFragments; i++ {
