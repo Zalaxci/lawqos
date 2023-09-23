@@ -7,7 +7,7 @@ const ENTRIES_XSLT = PARSER.parseFromString(`<?xml version="1.0"?>
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
 	<xsl:template match="dictionary">
-		<div class="entries-container">
+		<div id="entries-container">
 			<xsl:for-each select="entry">
 				<div class="entry">
 					<ruby><h2><xsl:value-of select="form/orth"/>:</h2> <rt><xsl:value-of select="form/pron"/></rt></ruby>
@@ -50,32 +50,59 @@ customElements.define('dictionary-entries', class DictionaryEntries extends LitE
 		}
 	}
 	static styles = css`
-		.entries-container {
+		#entries-container {
 			display: flex;
 			flex-wrap: wrap;
 			place-content: center;
 		}
+
 		.entry {
-			width: min(100%, 400px);
+			width: min(90%, 400px);
 			margin: 1rem;
 			padding: 0.5rem;
 			border-radius: 1rem;
 			background: linear-gradient(to bottom right, rgba(169, 148, 141, 0.5), rgba(215, 135, 105, 0.5));
+			cursor: pointer;
+			transition: width 1s, height 1s;
+			white-space: normal !important;
+			word-wrap: break-word !important;
+			word-break:break-all !important;
 		}
+		.entry h2, .entry rt, .entry span {
+			cursor: text !important;
+		}
+
+		.entry.opened {
+			width: 100%;
+			height: 65vh;
+		}
+		.entry.opened ruby {
+			float: left;
+			margin-right: 1.5rem;
+		}
+
 		.entry h2 {
 			text-transform: capitalize;
+		}
+		.entry rt {
+			font-size: small;
 		}
 		.entry ol {
 			padding: 0;
 			margin: 0;
 			list-style-position: inside;
 		}
-		.entry li {
+		.entry.opened ol {
+			height: 5rem;
+			display: flex;
+			gap: 1rem;
+			place-content: center flex-start;
+			align-items: center;
+		}
+		.entry:not(.opened) li {
 			width: 100%;
 		}
-		rt {
-			font-size: small;
-		}
+
 		.word + .word::before {
 			content: ', '
 		}
@@ -83,9 +110,25 @@ customElements.define('dictionary-entries', class DictionaryEntries extends LitE
 	render() {
 		const xmlDocument = PARSER.parseFromString(this.xmlString, 'application/xml')
 		const htmlDocument = ENTRIES_XSLT_PROCESSOR.transformToDocument(xmlDocument)
-		const htmlString = SERIALIZER.serializeToString(htmlDocument)
+		const htmlString = SERIALIZER.serializeToString(htmlDocument)		
 		return html`
 			${unsafeHTML(htmlString)}
 		`
+	}
+	updated() {
+		this.renderRoot.querySelector('#entries-container').onclick = (e) => {
+			const clickedElement = e.target
+			const illegalTagNames = ['H2', 'RT', 'SPAN']
+			if (illegalTagNames.includes(clickedElement.tagName)) return
+			let clickedEntry = clickedElement
+			while (!clickedEntry.classList.contains('entry')) {
+				clickedEntry = clickedEntry.parentElement
+			}
+			if (clickedEntry.classList.contains('opened')) {
+				clickedEntry.classList.remove('opened')
+			} else {
+				clickedEntry.classList.add('opened')
+			}			
+		}
 	}
 })

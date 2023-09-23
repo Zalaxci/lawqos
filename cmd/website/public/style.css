@@ -23,6 +23,9 @@ body {
 	place-items: center;
 	text-align: center;
 }
+ixalang-dictionary {
+	width: 100% !important;
+}
 
 * {
 	box-sizing: border-box;

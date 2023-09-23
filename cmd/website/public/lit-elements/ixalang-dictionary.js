@@ -12,6 +12,7 @@ customElements.define('language-picker', class LanguagePicker extends LitElement
 	}
 	static styles = css`
 		#language-picker {
+			width: min(auto, 95%);
 			font-size: 1.2em;
 		}
 		select option {
@@ -110,18 +111,16 @@ customElements.define('ixalang-dictionary', class IxaLangDictionary extends LitE
 	render() {
 		console.log('Rendering the dictionary...')
 		return html`
-			<div>
-				<language-picker
-					.selectLanguagePair=${(selectedLanguagePair) => this.#queueXmlPromise({ selectedLanguagePair })}
-				></language-picker>
-				<input
-					type="text"
-					name="search"
-					placeholder="Search a word"
-					@input=${(e) => this.#queueXmlPromise({ userInput: e.target.value })}
-				/>
-				<dictionary-entries xmlString=${until(...this.#newestXmlPromises)}></dictionary-entries>
-			</div>
+			<language-picker
+				.selectLanguagePair=${(selectedLanguagePair) => this.#queueXmlPromise({ selectedLanguagePair })}
+			></language-picker>
+			<input
+				type="text"
+				name="search"
+				placeholder="Search a word"
+				@input=${(e) => this.#queueXmlPromise({ userInput: e.target.value })}
+			/>
+			<dictionary-entries xmlString=${until(...this.#newestXmlPromises)}></dictionary-entries>
 		`
 	}
 })
