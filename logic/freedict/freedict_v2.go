@@ -12,23 +12,17 @@ type XmlElement struct {
 	InnerXML []byte `xml:",innerxml"`
 }
 
-func SearchXmlFile(filePath string, tagOfElementsToQuery string, queryInBytes []byte, addResult func(result []byte)) {
+func SearchXmlFile(filePath string, tagOfElementsToQuery string, queryInBytes []byte, addResult func(result []byte)) error {
 	xmlFile, err := os.Open(filePath)
 	if err != nil {
-		panic(ProgramError{
-			Reason: err.Error(),
-			Place:  "function that searches xml files as a stream",
-		})
+		return err
 	}
 	defer xmlFile.Close()
 
 	xmlDecoder := xml.NewDecoder(xmlFile)
 	for xmlToken, err := xmlDecoder.Token(); xmlToken != nil; xmlToken, err = xmlDecoder.Token() {
 		if err != nil {
-			panic(ProgramError{
-				Reason: err.Error(),
-				Place:  "function that searches xml files as a stream",
-			})
+			return err
 		}
 		switch typedToken := xmlToken.(type) {
 		case xml.StartElement:
@@ -41,13 +35,14 @@ func SearchXmlFile(filePath string, tagOfElementsToQuery string, queryInBytes []
 			}
 		}
 	}
+	return nil
 }
-func SearchFreedictDictionary(languagePair string, numberOfFragments int, query string) string {
+func SearchFreedictDictionary(languagePair string, numberOfFragments int, query string, includeErrors bool) (xmlResults string, errors []error) {
 	var wg sync.WaitGroup
 	queryInBytes := []byte(query)
 	xmlResultsInBytes := []byte{}
 	entryOpeningTag := []byte("<entry>")
-	entryClosingTag := []byte("</entry>")
+	entryClosingTag := []byte("</entry>\n")
 	addResult := func(result []byte) {
 		xmlResultsInBytes = append(xmlResultsInBytes, entryOpeningTag...)
 		xmlResultsInBytes = append(xmlResultsInBytes, result...)
@@ -57,10 +52,22 @@ func SearchFreedictDictionary(languagePair string, numberOfFragments int, query 
 	for i := 1; i <= numberOfFragments; i++ {
 		go func(fragmentId int) {
 			dictionaryPath := "./dictionaries/" + languagePair + "/" + strconv.Itoa(fragmentId) + ".tei"
-			SearchXmlFile(dictionaryPath, "entry", queryInBytes, addResult)
+			searchFileError := SearchXmlFile(dictionaryPath, "entry", queryInBytes, addResult)
+			if searchFileError != nil {
+				errors = append(errors, searchFileError)
+			}
 			wg.Done()
 		}(i)
 	}
 	wg.Wait()
-	return "<dictionary>" + string(xmlResultsInBytes) + "</dictionary>"
+	if !includeErrors {
+		xmlResults = "<results>\n<entries>" + string(xmlResultsInBytes) + "</entries>\n</results>"
+		return
+	}
+	errorsAsXml := ""
+	for _, err := range errors {
+		errorsAsXml += "<error>" + err.Error() + "</error>\n"
+	}
+	xmlResults = "<results>\n<errors>\n" + errorsAsXml + "</errors>\n<entries>\n" + string(xmlResultsInBytes) + "</entries>\n</results>"
+	return
 }

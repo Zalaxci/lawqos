@@ -3,28 +3,20 @@ package main
 import (
 	"IxaLang/logic/freedict"
 	"IxaLang/logic/storj"
+	"fmt"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 	"storj.io/uplink"
 )
 
-func search(c echo.Context) (serverError error) {
-	defer func() {
-		if r := recover(); r != nil {
-			switch err := r.(type) {
-			case freedict.UserError:
-				serverError = c.XMLBlob(422, []byte("<error> User error: "+err.Error()+"</error>"))
-			case error:
-				serverError = c.XMLBlob(500, []byte("<error> Program error: "+err.Error()+"</error>"))
-			default:
-				serverError = c.XMLBlob(500, []byte("<error>Unknown error :(</error>"))
-			}
-		}
-	}()
-	xmlString := freedict.SearchFreedictDictionary(c.Param("lang"), 6, c.Param("query"))
-	serverError = c.XMLBlob(200, []byte(xmlString))
-	return
+func search(c echo.Context) error {
+	xmlString, errors := freedict.SearchFreedictDictionary(c.Param("lang"), 6, c.Param("query"), true)
+	fmt.Println(xmlString)
+	if len(errors) > 0 {
+		return c.XMLBlob(500, []byte(xmlString))
+	}
+	return c.XMLBlob(200, []byte(xmlString))
 }
 func list(c echo.Context, storj storj.StorjWrapper) (serverError error) {
 	languages := make(map[string][]string)
