@@ -12,17 +12,22 @@
 	<ixalang-dictionary></ixalang-dictionary>
 	<script type="module">
 		(async function init() {
-			// Fetch Lit.js (object of exports) and available languages (list of target languages for each base language) in parallel
-			const [litJS, availableTargetLangs] = await Promise.all([
-				import('https://cdn.jsdelivr.net/gh/lit/dist@2.8.0/all/lit-all.min.js'),
-				fetch('/list').then(res => res.json()),
-			])
-			// Next up, make them available globally across all scripts
-			Object.assign(window, litJS, { availableTargetLangs })
-			// Also create some utility functions that should be available everywhere
+			// Create some utility functions that should be available everywhere
 			window.howManyBytesIn = (str) => {
 				return new TextEncoder().encode(str).length
 			}
+			window.apiInfo = {
+				getWordsUrl: (languagePair, word) => `/get/words/${languagePair}/${word}`,
+				getSentencesUrl: (languagePair, word, page) => `/get/sentences/${languagePair}/${word}/${page}`,
+				getLanguagesUrl: () => '/get/dictionary-languages',
+			}
+			// Fetch Lit.js (object of exports) and available languages (list of target languages for each base language) in parallel
+			const [litJS, availableTargetLangs] = await Promise.all([
+				import('https://cdn.jsdelivr.net/gh/lit/dist@2.8.0/all/lit-all.min.js'),
+				fetch(apiInfo.getLanguagesUrl()).then(res => res.json()),
+			])
+			// Next up, make them available globally across all scripts
+			Object.assign(window, litJS, { availableTargetLangs })
 			// Finally, import all our scripts (in parallel)
 			import('./lit-elements/dictionary-entries.js')
 			import('./lit-elements/ixalang-dictionary.js')

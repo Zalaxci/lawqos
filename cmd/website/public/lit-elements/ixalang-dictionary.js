@@ -57,7 +57,7 @@ customElements.define('ixalang-dictionary', class IxaLangDictionary extends LitE
 	#selectedLanguagePair = ''
 	#userInput = ''
 	#xmlPromises = [
-		'<dictionary></dictionary>'
+		'<results><entries></entries></results>'
 	]
 	get minimumInputBytes() {
 		return 3
@@ -89,11 +89,10 @@ customElements.define('ixalang-dictionary', class IxaLangDictionary extends LitE
 		if (typeof params.selectedLanguagePair === 'string') this.#selectedLanguagePair = params.selectedLanguagePair
 		if (typeof params.userInput === 'string') this.#userInput = params.userInput
 		if (howManyBytesIn(this.#userInput) < this.minimumInputBytes) return
-		const apiUrl = `/search/${this.#selectedLanguagePair}/${this.#userInput}`
 		// This is a loophole to allow abortion of fetch requests
 		// Each promise has an abort method which returns true and aborts the promise if not resolved, or returns false if resolved
 		const abortController = new AbortController()
-		const xmlPromise = fetch(apiUrl, {
+		const xmlPromise = fetch(apiInfo.getWordsUrl(this.#selectedLanguagePair, this.#userInput), {
 			signal: abortController.signal
 		}).then(res => res.text())
 		xmlPromise.abort = () => {
@@ -120,7 +119,7 @@ customElements.define('ixalang-dictionary', class IxaLangDictionary extends LitE
 				placeholder="Search a word"
 				@input=${(e) => this.#queueXmlPromise({ userInput: e.target.value })}
 			/>
-			<dictionary-entries xmlString=${until(...this.#newestXmlPromises)}></dictionary-entries>
+			<dictionary-entries languagePair=${this.#selectedLanguagePair} xmlString=${until(...this.#newestXmlPromises)}></dictionary-entries>
 		`
 	}
 })

@@ -6,7 +6,7 @@ const ENTRIES_XSLT = PARSER.parseFromString(`<?xml version="1.0"?>
 	<xsl:stylesheet version="1.0"
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
-	<xsl:template match="dictionary">
+	<xsl:template match="results/entries">
 		<div id="entries-container">
 			<xsl:for-each select="entry">
 				<div class="entry">
@@ -30,21 +30,64 @@ const ENTRIES_XSLT = PARSER.parseFromString(`<?xml version="1.0"?>
 	</xsl:stylesheet>`, 'application/xml')
 ENTRIES_XSLT_PROCESSOR.importStylesheet(ENTRIES_XSLT)
 
-const ERROR_XSLT_PROCESSOR = new XSLTProcessor()
-const ERROR_XSLT = PARSER.parseFromString(`<?xml version="1.0"?>
+const SENTENCES_XSLT_PROCESSOR = new XSLTProcessor()
+const SENTENCES_XSLT = PARSER.parseFromString(`<?xml version="1.0"?>
 	<xsl:stylesheet version="1.0"
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
-	<xsl:template match="error">
-		<div class="error">
-			<h3><xsl:value-of select="current()"/></h3>
+	<xsl:template match="results/sentences">
+		<div class="sentences-container">
+			<xsl:for-each select="sentence">
+				<div class="sentence">
+					<h3><xsl:value-of select="text"/></h3>
+					<xsl:for-each select="translations/translation">
+						<span><xsl:value-of select="text"/></span>
+					</xsl:for-each>
+				</div>
+			</xsl:for-each>
 		</div>
 	</xsl:template>
 	</xsl:stylesheet>`, 'application/xml')
-ERROR_XSLT_PROCESSOR.importStylesheet(ERROR_XSLT)
+SENTENCES_XSLT_PROCESSOR.importStylesheet(SENTENCES_XSLT)
 
+customElements.define('word-details', class WordDetails extends LitElement {
+	static properties = {
+		word: {
+			type: String
+		},
+		languagePair: {
+			type: String
+		}
+	}
+	static styles = css`
+		.sentences-container {
+			text-align: left;
+		}
+		.sentence h3 {
+			display: inline;
+		}
+		span::before {
+			content: '  ';
+		}
+	`
+	async fetchTatoebaSentences() {
+		const apiResponse = await fetch(apiInfo.getSentencesUrl(this.languagePair, this.word, 1))
+		const xmlString = await apiResponse.text()
+		const xmlDocument = PARSER.parseFromString(xmlString, 'application/xml')
+		const htmlDocument = SENTENCES_XSLT_PROCESSOR.transformToDocument(xmlDocument)
+		const htmlString = SERIALIZER.serializeToString(htmlDocument)	
+		const htmlTemplate = unsafeHTML(htmlString)
+		return htmlTemplate
+	}
+	render() {
+		return until(this.fetchTatoebaSentences(), "Loading...")
+	}
+})
 customElements.define('dictionary-entries', class DictionaryEntries extends LitElement {
 	static properties = {
+		languagePair: {
+			type: String
+		},
 		xmlString: {
 			type: String
 		}
@@ -74,7 +117,6 @@ customElements.define('dictionary-entries', class DictionaryEntries extends LitE
 
 		.entry.opened {
 			width: 100%;
-			height: 65vh;
 		}
 		.entry.opened ruby {
 			float: left;
@@ -107,6 +149,33 @@ customElements.define('dictionary-entries', class DictionaryEntries extends LitE
 			content: ', '
 		}
 	`
+	#handleClickEvent(e) {
+		const clickedElement = e.target
+		const illegalTagNames = ['H2', 'RT', 'SPAN']
+		if (clickedElement.id == 'entries-container') return
+		if (illegalTagNames.includes(clickedElement.tagName)) return
+		let clickedEntry = clickedElement
+		while (!clickedEntry.classList.contains('entry')) {
+			clickedEntry = clickedEntry.parentElement
+		}
+		// Shrink/grow entry
+		const entryWasOpen = clickedEntry.classList.contains('opened')
+		if (entryWasOpen) {
+			clickedEntry.classList.remove('opened')
+		} else {
+			clickedEntry.classList.add('opened')
+		}
+		// Create word details element if it doesn't exist
+		let entryWordDetails = clickedEntry.querySelector('word-details')
+		if (entryWordDetails === null) {
+			entryWordDetails = document.createElement('word-details')
+			entryWordDetails.word = clickedEntry.querySelector('h2').innerHTML
+			entryWordDetails.languagePair = this.languagePair
+			clickedEntry.appendChild(entryWordDetails)
+		}
+		// Hide/show details
+		entryWordDetails.style.display = entryWasOpen? 'none' : 'block'
+	}
 	render() {
 		const xmlDocument = PARSER.parseFromString(this.xmlString, 'application/xml')
 		const htmlDocument = ENTRIES_XSLT_PROCESSOR.transformToDocument(xmlDocument)
@@ -116,19 +185,6 @@ customElements.define('dictionary-entries', class DictionaryEntries extends LitE
 		`
 	}
 	updated() {
-		this.renderRoot.querySelector('#entries-container').onclick = (e) => {
-			const clickedElement = e.target
-			const illegalTagNames = ['H2', 'RT', 'SPAN']
-			if (illegalTagNames.includes(clickedElement.tagName)) return
-			let clickedEntry = clickedElement
-			while (!clickedEntry.classList.contains('entry')) {
-				clickedEntry = clickedEntry.parentElement
-			}
-			if (clickedEntry.classList.contains('opened')) {
-				clickedEntry.classList.remove('opened')
-			} else {
-				clickedEntry.classList.add('opened')
-			}			
-		}
+		this.renderRoot.querySelector('#entries-container').onclick = this.#handleClickEvent.bind(this)
 	}
 })
