@@ -15,7 +15,12 @@ customElements.define('language-picker', class LanguagePicker extends LitElement
 			width: min(auto, 95%);
 			font-size: 1.2em;
 		}
-		select option {
+		select {
+			background: rgb(95, 80, 40);
+			border: 0;
+			border-radius: 0.3rem;
+		}
+		option {
 			font-size: 1.2em !important;
 		}
 	`
@@ -71,7 +76,28 @@ customElements.define('ixalang-dictionary', class IxaLangDictionary extends LitE
 	}
 	static properties = {}
 	static styles = css`
-		dictionary-entries:not(:empty) {
+		#dictionary-container {
+			width: 100%;
+			min-height: 100vh !important;
+			height: max(100vh, auto);
+			display: flex;
+			flex-direction: column-reverse;
+			place-items: center;
+			text-align: center;
+		}
+		input {
+			width: min(95%, 200px);
+		}
+		#top-spacing {
+			flex-grow: 1;
+		}
+		language-picker {
+			margin-top: 1.5rem;
+		}
+		input:not(:placeholder-shown) ~ *:not(language-picker) {
+			display: none;
+		}
+		dictionary-entries {
 			flex-grow: 1;
 			width: 100%;
 		}
@@ -107,19 +133,25 @@ customElements.define('ixalang-dictionary', class IxaLangDictionary extends LitE
 			}
 		)
 	}
+	#importUndefinedElements(...elementTags) {}
 	render() {
 		console.log('Rendering the dictionary...')
 		return html`
-			<language-picker
-				.selectLanguagePair=${(selectedLanguagePair) => this.#queueXmlPromise({ selectedLanguagePair })}
-			></language-picker>
-			<input
-				type="text"
-				name="search"
-				placeholder="Search a word"
-				@input=${(e) => this.#queueXmlPromise({ userInput: e.target.value })}
-			/>
-			<dictionary-entries languagePair=${this.#selectedLanguagePair} xmlString=${until(...this.#newestXmlPromises)}></dictionary-entries>
+			<div id="dictionary-container">
+				<dictionary-entries languagePair=${this.#selectedLanguagePair} xmlString=${until(...this.#newestXmlPromises)}></dictionary-entries>
+				<input
+					type="text"
+					name="search"
+					placeholder="Type here"
+					@input=${(e) => this.#queueXmlPromise({ userInput: e.target.value })}
+				/>
+				<language-picker
+					.selectLanguagePair=${(selectedLanguagePair) => this.#queueXmlPromise({ selectedLanguagePair })}
+				></language-picker>
+				<h1 class="no-margin-top">IxaLang</h1>
+				<p>Ixalaz + Languages =</p>
+				<div id="top-spacing"></div>
+			</div>
 		`
 	}
 })

@@ -10,7 +10,11 @@ const ENTRIES_XSLT = PARSER.parseFromString(`<?xml version="1.0"?>
 		<div id="entries-container">
 			<xsl:for-each select="entry">
 				<div class="entry">
-					<ruby><h2><xsl:value-of select="form/orth"/>:</h2> <rt><xsl:value-of select="form/pron"/></rt></ruby>
+					<div class="header">
+						<ruby>
+							<h2><xsl:value-of select="form/orth"/>:</h2> <rt><xsl:value-of select="form/pron"/></rt>
+						</ruby>
+					</div>
 					<ol>
 						<xsl:for-each select="sense">
 							<li>
@@ -36,13 +40,15 @@ const SENTENCES_XSLT = PARSER.parseFromString(`<?xml version="1.0"?>
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
 	<xsl:template match="results/sentences">
-		<div class="sentences-container">
+		<div class="sentences-column">
 			<xsl:for-each select="sentence">
 				<div class="sentence">
 					<h3><xsl:value-of select="text"/></h3>
-					<xsl:for-each select="translations/translation">
-						<span><xsl:value-of select="text"/></span>
-					</xsl:for-each>
+					<ul>
+						<xsl:for-each select="translations/translation">
+							<li><xsl:value-of select="text"/></li>
+						</xsl:for-each>
+					</ul>
 				</div>
 			</xsl:for-each>
 		</div>
@@ -50,7 +56,7 @@ const SENTENCES_XSLT = PARSER.parseFromString(`<?xml version="1.0"?>
 	</xsl:stylesheet>`, 'application/xml')
 SENTENCES_XSLT_PROCESSOR.importStylesheet(SENTENCES_XSLT)
 
-customElements.define('word-details', class WordDetails extends LitElement {
+customElements.define('example-sentences', class ExampleSentences extends LitElement {
 	static properties = {
 		word: {
 			type: String
@@ -60,8 +66,23 @@ customElements.define('word-details', class WordDetails extends LitElement {
 		}
 	}
 	static styles = css`
-		.sentences-container {
+		.sentences-row {
+			display: flex;
+		}
+		* {
 			text-align: left;
+		}
+		.right-spacing, .sentences-info {
+			flex-grow: 1;
+		}
+		.sentences-info {
+			writing-mode: vertical-rl;
+			transform: rotate(180deg);
+			color: rgb(55, 55, 65);
+			font-size: 4rem;
+		}
+		.sentence {
+			background: rgb(35, 35, 40);
 		}
 		.sentence h3 {
 			display: inline;
@@ -80,7 +101,10 @@ customElements.define('word-details', class WordDetails extends LitElement {
 		return htmlTemplate
 	}
 	render() {
-		return until(this.fetchTatoebaSentences(), "Loading...")
+		return html`
+			<h2>Example sentences:</h2>
+			${until(this.fetchTatoebaSentences(), "Loading...")}
+		`
 	}
 })
 customElements.define('dictionary-entries', class DictionaryEntries extends LitElement {
@@ -94,35 +118,34 @@ customElements.define('dictionary-entries', class DictionaryEntries extends LitE
 	}
 	static styles = css`
 		#entries-container {
+			max-width: 1350px;
+			margin-left: auto;
+			margin-right: auto;
 			display: flex;
 			flex-wrap: wrap;
 			place-content: center;
 		}
-
+		/* Entry & entry contents */
 		.entry {
+			position: relative;
 			width: min(90%, 400px);
-			margin: 1rem;
+			margin: 1em;
 			padding: 0.5rem;
 			border-radius: 1rem;
-			background: linear-gradient(to bottom right, rgba(169, 148, 141, 0.5), rgba(215, 135, 105, 0.5));
+			background: rgb(35, 35, 40);
 			cursor: pointer;
-			transition: width 1s, height 1s;
+			transition: transform 0.2s, height 0.5s, width 0.5s, background 0.5s;
 			white-space: normal !important;
 			word-wrap: break-word !important;
 			word-break:break-all !important;
+			overflow: hidden !important;
 		}
-		.entry h2, .entry rt, .entry span {
+		.entry h2, .entry rt, .entry span, .entry example-sentences {
 			cursor: text !important;
 		}
-
-		.entry.opened {
-			width: 100%;
+		.entry ruby {
+			background: rgb(95, 80, 40);
 		}
-		.entry.opened ruby {
-			float: left;
-			margin-right: 1.5rem;
-		}
-
 		.entry h2 {
 			text-transform: capitalize;
 		}
@@ -134,19 +157,46 @@ customElements.define('dictionary-entries', class DictionaryEntries extends LitE
 			margin: 0;
 			list-style-position: inside;
 		}
-		.entry.opened ol {
-			height: 5rem;
-			display: flex;
-			gap: 1rem;
-			place-content: center flex-start;
-			align-items: center;
-		}
 		.entry:not(.opened) li {
 			width: 100%;
 		}
-
 		.word + .word::before {
 			content: ', '
+		}
+		/* Hover effects (zoom and gradient) */
+		.entry:not(.opened):hover {
+			transform: scale(1.1);
+		}
+		.entry::before {
+			--size: 0;
+			content: '';
+			position: absolute;
+			left: var(--hoverX);
+			top: var(--hoverY);
+			width: var(--size);
+			height: var(--size);
+			background: radial-gradient(circle closest-side, rgb(37, 33, 45), transparent);
+			transform: translate(-50%, -50%);
+			transition: width 0.2s ease, height 0.2s ease;
+		}
+		.entry:not(.opened):hover::before {
+			--size: 180px;
+		}
+		/* Restyle opened entries */
+		.entry.opened {
+			margin: 1rem 0;
+			min-height: 80vh;
+			width: 96%;
+			background: rgb(37, 33, 45);
+			display: flex;
+			flex-wrap: wrap;
+		}
+		.entry.opened .header {
+			flex-grow: 1;
+			width: 100%;
+		}
+		.entry.opened ol {
+			flex-grow: 1;
 		}
 	`
 	#handleClickEvent(e) {
@@ -166,15 +216,15 @@ customElements.define('dictionary-entries', class DictionaryEntries extends LitE
 			clickedEntry.classList.add('opened')
 		}
 		// Create word details element if it doesn't exist
-		let entryWordDetails = clickedEntry.querySelector('word-details')
-		if (entryWordDetails === null) {
-			entryWordDetails = document.createElement('word-details')
-			entryWordDetails.word = clickedEntry.querySelector('h2').innerHTML
-			entryWordDetails.languagePair = this.languagePair
-			clickedEntry.appendChild(entryWordDetails)
+		let entryExampleSentences = clickedEntry.querySelector('example-sentences')
+		if (entryExampleSentences === null) {
+			entryExampleSentences = document.createElement('example-sentences')
+			entryExampleSentences.word = clickedEntry.querySelector('h2').innerHTML
+			entryExampleSentences.languagePair = this.languagePair
+			clickedEntry.appendChild(entryExampleSentences)
 		}
 		// Hide/show details
-		entryWordDetails.style.display = entryWasOpen? 'none' : 'block'
+		entryExampleSentences.style.display = entryWasOpen? 'none' : 'block'
 	}
 	render() {
 		const xmlDocument = PARSER.parseFromString(this.xmlString, 'application/xml')
@@ -185,6 +235,14 @@ customElements.define('dictionary-entries', class DictionaryEntries extends LitE
 		`
 	}
 	updated() {
-		this.renderRoot.querySelector('#entries-container').onclick = this.#handleClickEvent.bind(this)
+		const entriesContainer = this.renderRoot.querySelector('#entries-container')
+		entriesContainer.onclick = this.#handleClickEvent.bind(this)
+		entriesContainer.onmousemove = (e) => {
+			let rect = e.target.getBoundingClientRect();
+			const hoverX = e.clientX - rect.left;
+			const hoverY = e.clientY - rect.top;
+			entriesContainer.style.setProperty('--hoverX', `${hoverX}px`)
+			entriesContainer.style.setProperty('--hoverY', `${hoverY}px`)
+		}
 	}
 })
