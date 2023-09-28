@@ -13,14 +13,34 @@
 	-moz-osx-font-smoothing: grayscale;
 	-webkit-text-size-adjust: 100%;
 }
+* {
+	box-sizing: border-box;
+}
+
 body {
 	margin: 0;
 	padding: 0;
 }
-
-* {
-	box-sizing: border-box;
+#dictionary-container {
+	width: 100%;
+	min-height: 100vh;
+	height: max(100vh, auto);
+	display: flex;
+	flex-direction: column-reverse;
+	place-items: center;
+	text-align: center;
 }
+/* #top-spacing {
+	flex-grow: 1;
+} */
+ixalang-search {
+	margin-top: 1.5rem;
+}
+ixalang-entries {
+	flex-grow: 1;
+	width: 100%;
+}
+
 .no-margin-top {
 	margin-top: 0;
 } 
