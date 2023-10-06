@@ -7,15 +7,14 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
-	"storj.io/uplink"
 )
 
 func words(c echo.Context) error {
-	xmlString, errors := freedict.SearchFreedictDictionary(c.Param("lang"), 6, c.Param("query"), true)
-	if len(errors) > 0 {
-		return c.XMLBlob(500, []byte(xmlString))
+	results := freedict.SearchFreedictDictionary(c.Param("lang"), 6, c.Param("query"))
+	if len(results.Errors) > 0 {
+		return c.JSONPretty(500, results, "\t")
 	}
-	return c.XMLBlob(200, []byte(xmlString))
+	return c.JSONPretty(200, results, "\t")
 }
 func sentences(c echo.Context) (serverError error) {
 	languagePair := strings.Split(c.Param("lang"), "-")
@@ -24,21 +23,25 @@ func sentences(c echo.Context) (serverError error) {
 }
 func dictionaryLanguages(c echo.Context, storj storj.StorjWrapper) (serverError error) {
 	languages := make(map[string][]string)
-	storj.ForEachObject(
-		func(obj *uplink.Object) {
-			dictonaryName := obj.Key
-			languagePair := strings.Split(
-				strings.Split(dictonaryName, ".")[0],
-				"-",
-			)
-			baseLang, targetLang := languagePair[0], languagePair[1]
-			if targetLangsList, baseLangRegistered := languages[baseLang]; baseLangRegistered {
-				languages[baseLang] = append(targetLangsList, targetLang)
-			} else {
-				languages[baseLang] = []string{targetLang}
-			}
-		},
-	)
+	languages["ell"] = []string{
+		"eng",
+		"jpn",
+	}
+	// storj.ForEachObject(
+	// 	func(obj *uplink.Object) {
+	// 		dictonaryName := obj.Key
+	// 		languagePair := strings.Split(
+	// 			strings.Split(dictonaryName, ".")[0],
+	// 			"-",
+	// 		)
+	// 		baseLang, targetLang := languagePair[0], languagePair[1]
+	// 		if targetLangsList, baseLangRegistered := languages[baseLang]; baseLangRegistered {
+	// 			languages[baseLang] = append(targetLangsList, targetLang)
+	// 		} else {
+	// 			languages[baseLang] = []string{targetLang}
+	// 		}
+	// 	},
+	// )
 	return c.JSONPretty(200, languages, "\t")
 }
 

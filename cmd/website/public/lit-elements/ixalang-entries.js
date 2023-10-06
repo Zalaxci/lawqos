@@ -6,9 +6,10 @@ export class IxalangEntries extends LitElement {
 					<xsl:stylesheet version="1.0"
 					xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
-					<xsl:template match="results/entries">
+					<xsl:template match="entries">
 						<div id="entries-container">
 							<xsl:for-each select="entry">
+								<xsl:sort select="form/orth"/>
 								<div class="entry">
 									<div class="header">
 										<ruby>
@@ -27,14 +28,19 @@ export class IxalangEntries extends LitElement {
 											</li>
 										</xsl:for-each>
 									</ol>
-									<div class="additional-info"></div>
+									<div class="additional-info">Coming soon</div>
 								</div>
 							</xsl:for-each>
 						</div>
 					</xsl:template>
 					</xsl:stylesheet>`
+	#sortingSelector = null
+	#entries = null
 	static properties = {
 		languagePair: {
+			type: String
+		},
+		userInput: {
 			type: String
 		},
 		xmlString: {
@@ -130,9 +136,29 @@ export class IxalangEntries extends LitElement {
 			this.#parser.parseFromString(this.#xsltString, 'application/xml')
 		)
 	}
+	#sortEntries() {
+		if (!this.#entries instanceof HTMLCollection) return
+		if (!this.#sortingSelector instanceof HTMLElement) return
+		switch (this.#sortingSelector.value) {
+			case 'by-length':
+				console.log('Sorting entries by length...')
+				const xpathToSearchForInput = `.//*[text()[contains(., '${this.userInput}')]]`
+				const elementIsWordExplanation = (el) => el.tagName === 'SPAN' && !el.classList.contains('word')
+				for (const entryElement of this.#entries) {
+					const elementContainingInput = document.evaluate(xpathToSearchForInput, entryElement, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
+					entryElement.style.order = elementIsWordExplanation(elementContainingInput)?  2147483647 : (elementContainingInput.innerHTML.length - this.userInput.length)
+				}
+				break
+			default:
+				console.log('Sorting entries alphabetically (default sorting)...')
+				for (const entryElement of this.#entries) {
+					entryElement.style.removeProperty('order')
+				}
+		}
+	}
 	async #handleClickEvent(e) {
 		const clickedElement = e.target
-		const illegalTagNames = ['H2', 'RT', 'SPAN']
+		const illegalTagNames = ['H1', 'H2', 'H3', 'RT', 'SPAN', 'IXALANG-SENTENCES', 'UL', 'LI']
 		if (clickedElement.id == 'entries-container') return
 		if (illegalTagNames.includes(clickedElement.tagName)) return
 		let clickedEntry = clickedElement
@@ -158,7 +184,7 @@ export class IxalangEntries extends LitElement {
 			entryExampleSentences = document.createElement('ixalang-sentences')
 			entryExampleSentences.word = clickedEntry.querySelector('h2').innerHTML
 			entryExampleSentences.languagePair = this.languagePair
-			clickedEntry.appendChild(entryExampleSentences)
+			clickedEntry.insertBefore(entryExampleSentences, clickedElement.querySelector('.additional-info'))
 		}
 		// Hide/show details
 		entryExampleSentences.style.display = entryWasOpen? 'none' : 'block'
@@ -166,13 +192,20 @@ export class IxalangEntries extends LitElement {
 	render() {
 		const xmlDocument = this.#parser.parseFromString(this.xmlString, 'application/xml')
 		const htmlDocument = this.#xsltProcessor.transformToDocument(xmlDocument)
-		const htmlString = this.#serializer.serializeToString(htmlDocument)		
+		const htmlString = this.#serializer.serializeToString(htmlDocument)
 		return html`
+			<select name="sorting-selector" id="sorting-selector" @input=${this.#sortEntries.bind(this)}>
+				<option value="alphabetically">Alphabetically</option>
+				<option value="by-length">By Length</option>
+			</select>
 			${unsafeHTML(htmlString)}
 		`
 	}
 	updated() {
 		const entriesContainer = this.renderRoot.querySelector('#entries-container')
+		this.#entries = entriesContainer.children
+		this.#sortingSelector = this.renderRoot.querySelector('#sorting-selector')
+		this.#sortEntries()
 		entriesContainer.onclick = this.#handleClickEvent.bind(this)
 		entriesContainer.onmousemove = (e) => {
 			let rect = e.target.getBoundingClientRect();

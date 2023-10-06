@@ -29,6 +29,7 @@ async function renderXmlEntries(xmlString) {
 		customElements.define('ixalang-entries', IxalangEntries)
 	}
 	entriesContainer.languagePair = selectedLanguagePair
+	entriesContainer.userInput = userInput
 	entriesContainer.xmlString = xmlString
 }
 function queueXmlPromise(params) {
@@ -40,9 +41,13 @@ function queueXmlPromise(params) {
 	xmlPromise = fetch(apiInfo.getWordsUrl(selectedLanguagePair, userInput), {
 		signal: abortController.signal
 	})
-	.then(apiResponse => apiResponse.text())
-	.then(xmlString => {
-		renderXmlEntries(xmlString)
+	.then(apiResponse => apiResponse.json())
+	.then(apiData => {
+		if (apiData.Entries instanceof Array && apiData.Entries.length > 0) {
+			renderXmlEntries(
+				`<entries>${apiData.Entries.join('')}</entries>`
+			)
+		}
 	})
 	// This is a loophole to allow abortion of a promise by calling its abort method
 	xmlPromise.abort = () => {
