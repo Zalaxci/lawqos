@@ -13,7 +13,7 @@ export class IxalangEntries extends LitElement {
 								<div class="entry">
 									<div class="header">
 										<ruby>
-											<h2><xsl:value-of select="form/orth"/>:</h2> <rt><xsl:value-of select="form/pron"/></rt>
+											<h2><xsl:value-of select="form/orth"/></h2> <rt><xsl:value-of select="form/pron"/></rt>
 										</ruby>
 									</div>
 									<ol>
@@ -43,8 +43,8 @@ export class IxalangEntries extends LitElement {
 		userInput: {
 			type: String
 		},
-		xmlString: {
-			type: String
+		xmlEntryList: {
+			type: Array
 		}
 	}
 	static styles = css`
@@ -80,6 +80,9 @@ export class IxalangEntries extends LitElement {
 		.entry h2 {
 			text-transform: capitalize;
 		}
+		.entry h2::after {
+			content: ':';
+		}
 		.entry rt {
 			font-size: small;
 		}
@@ -92,7 +95,10 @@ export class IxalangEntries extends LitElement {
 			width: 100%;
 		}
 		.word + .word::before {
-			content: ', '
+			content: ', ';
+		}
+		.entry:not(.opened) .additional-info {
+			display: none;
 		}
 		/* Hover effects (zoom and gradient) */
 		.entry:not(.opened):hover {
@@ -190,15 +196,25 @@ export class IxalangEntries extends LitElement {
 		entryExampleSentences.style.display = entryWasOpen? 'none' : 'block'
 	}
 	render() {
-		const xmlDocument = this.#parser.parseFromString(this.xmlString, 'application/xml')
-		const htmlDocument = this.#xsltProcessor.transformToDocument(xmlDocument)
-		const htmlString = this.#serializer.serializeToString(htmlDocument)
+		if (this.xmlEntryList.length > 0) {
+			const xmlString = `<entries>${this.xmlEntryList.join('')}</entries>`
+			const xmlDocument = this.#parser.parseFromString(xmlString, 'application/xml')
+			const htmlDocument = this.#xsltProcessor.transformToDocument(xmlDocument)
+			const htmlString = this.#serializer.serializeToString(htmlDocument)
+			return html`
+				<h3>Sort:</h3>
+				<select name="sorting-selector" id="sorting-selector" @input=${this.#sortEntries.bind(this)}>
+					<option value="alphabetically">Alphabetically</option>
+					<option value="by-length">By Length</option>
+				</select>
+				${unsafeHTML(htmlString)}
+			`
+		}
 		return html`
-			<select name="sorting-selector" id="sorting-selector" @input=${this.#sortEntries.bind(this)}>
-				<option value="alphabetically">Alphabetically</option>
-				<option value="by-length">By Length</option>
-			</select>
-			${unsafeHTML(htmlString)}
+			<div>
+				<p>No results found</p>
+				<h1>:(</h1>
+			</div>
 		`
 	}
 	updated() {

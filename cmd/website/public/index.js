@@ -22,7 +22,7 @@ let userInput = ''
 
 let xmlPromise = {}
 
-async function renderXmlEntries(xmlString) {
+async function renderXmlEntries(xmlEntryList) {
 	if (customElements.get('ixalang-entries') === undefined) {
 		console.log('Importing ixalang entries lit element...')
 		const { IxalangEntries } = await import('./lit-elements/ixalang-entries.js')
@@ -30,24 +30,23 @@ async function renderXmlEntries(xmlString) {
 	}
 	entriesContainer.languagePair = selectedLanguagePair
 	entriesContainer.userInput = userInput
-	entriesContainer.xmlString = xmlString
+	entriesContainer.xmlEntryList = xmlEntryList
 }
 function queueXmlPromise(params) {
-	if (xmlPromise.abort !== undefined) xmlPromise.abort()
 	if (typeof params.selectedLanguagePair === 'string') selectedLanguagePair = params.selectedLanguagePair
 	if (typeof params.userInput === 'string') userInput = params.userInput
 	if (howManyBytesIn(userInput) < minimumInputBytes) return
+	if (xmlPromise.abort !== undefined) xmlPromise.abort()
 	const abortController = new AbortController()
 	xmlPromise = fetch(apiInfo.getWordsUrl(selectedLanguagePair, userInput), {
 		signal: abortController.signal
 	})
 	.then(apiResponse => apiResponse.json())
 	.then(apiData => {
-		if (apiData.Entries instanceof Array && apiData.Entries.length > 0) {
-			renderXmlEntries(
-				`<entries>${apiData.Entries.join('')}</entries>`
-			)
-		}
+		console.log(apiData)
+		renderXmlEntries(
+			apiData.Entries instanceof Array? apiData.Entries : []
+		)
 	})
 	// This is a loophole to allow abortion of a promise by calling its abort method
 	xmlPromise.abort = () => {
