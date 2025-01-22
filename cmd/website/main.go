@@ -1,16 +1,26 @@
 package main
 
 import (
-	"IxaLang/logic/freedict"
-	"IxaLang/logic/storj"
-	"IxaLang/logic/tatoeba"
+	"embed"
+	"io/fs"
+	"net/http"
 	"strings"
+
+	"github.com/zalaxci/ixalang/pkg/freedict"
+	"github.com/zalaxci/ixalang/pkg/storj"
+	"github.com/zalaxci/ixalang/pkg/tatoeba"
 
 	"github.com/labstack/echo/v4"
 )
 
+// Run some commands at build time to bundle the JavaScript inside the go binary
+// Don't use a javascript bundler so we don't need NodeJS installed in the backend
+//go:generate sh update-static.sh
+//go:embed static-files
+var embeddedFolders embed.FS
+
 func words(c echo.Context) error {
-	results := freedict.SearchFreedictDictionary(c.Param("lang"), 6, c.Param("query"))
+	results := freedict.SearchFreedictDictionary(c.Param("lang"), 5, c.Param("query"))
 	if len(results.Errors) > 0 {
 		return c.JSONPretty(500, results, "\t")
 	}
@@ -47,7 +57,11 @@ func dictionaryLanguages(c echo.Context, storj storj.StorjWrapper) (serverError 
 
 func main() {
 	storj := storj.OpenProject("ixalang")
+
+	// Create echo server
 	echoInstance := echo.New()
+
+	// Go API
 	echoInstance.GET("/get/words/:lang/:query", func(c echo.Context) error {
 		return words(c)
 	})
@@ -57,6 +71,24 @@ func main() {
 	echoInstance.GET("/get/dictionary-languages", func(c echo.Context) error {
 		return dictionaryLanguages(c, storj)
 	})
-	echoInstance.Static("/", "./public")
+
+	// Change root directory to static-files directory
+	staticFilesFolder, err := fs.Sub(embeddedFolders, "static-files")
+	if err != nil {
+		panic(err)
+	}
+
+	// Serve index.html & static files
+	staticFileHandler := http.FileServer(
+		http.FS(staticFilesFolder),
+	)
+	echoInstance.GET("/", echo.WrapHandler(
+		staticFileHandler,
+	))
+	echoInstance.GET("/static/*", echo.WrapHandler(
+		http.StripPrefix("/static/", staticFileHandler),
+	))
+
+	// Start server & log errors
 	echoInstance.Logger.Fatal(echoInstance.Start(":8080"))
 }

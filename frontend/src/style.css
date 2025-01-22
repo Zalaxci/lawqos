@@ -1,0 +1,57 @@
+:root {
+	font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+	line-height: 1.5;
+	font-weight: 400;
+
+	color-scheme: light dark;
+	color: rgba(255, 255, 255, 0.87);
+	background-color: rgb(16, 15, 17);
+
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	-webkit-text-size-adjust: 100%;
+}
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	padding: 0;
+}
+#dictionary-container {
+	width: 100%;
+	min-height: 100vh;
+	height: max(100vh, auto);
+	display: flex;
+	flex-direction: column-reverse;
+	place-items: center;
+	text-align: center;
+}
+/* #top-spacing {
+	flex-grow: 1;
+} */
+ixalang-search {
+	margin-top: 1.5rem;
+}
+ixalang-entries {
+	flex-grow: 1;
+	width: 100%;
+}
+
+.no-margin-top {
+	margin-top: 0;
+} 
+h1 {
+	font-size: 3.2em;
+	line-height: 1.1;
+}
+
+/* @media (prefers-color-scheme: light) {
+	:root {
+		color: #213547;
+		background-color: #ffffff;
+	}
+} */
