@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>lawqos</title>
+	<style>
+		body {
+			margin: 0;
+		}
+	</style>
+</head>
+<body>
+	<lawcos-page>
+		<span slot="top">Look up a word from <lawcos-dropdown whatToSelect="base-lang"></lawcos-dropdown> to <lawcos-dropdown whatToSelect="target-lang"></lawcos-dropdown></span>
+		<lawcos-search whatToSelect="word" slot="top"></lawcos-search>
+		<lawcos-wordstudy slot="main"></lawcos-wordstudy>
+	</lawcos-page>
+	<script type="module" src="index.js"></script>
+</body>
+</html>

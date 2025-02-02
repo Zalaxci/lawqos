@@ -1,1 +1,0 @@
-gcc ./lib/libfreedict_test.c -o libfreedict_test -lcurl -lxml2 && ./libfreedict_test && rm ./libfreedict_test

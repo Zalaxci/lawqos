@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>lawqos</title>
+	<style>
+		body {
+			margin: 0;
+            width: 100vw;
+            max-width: 100vw;
+            overflow-x: hidden;
+		}
+	</style>
+</head>
+<body>
+	<lawcos-page>
+        <span slot="top">
+            <lawcos-dropdown
+                id="word-dropdown"
+                what-to-select="word"
+                style="height: 50px"
+            ></lawcos-dropdown>
+            <lawcos-dropdown
+                id="language-dropdown"
+                what-to-select="language"
+                style="height: 50px"
+            ></lawcos-dropdown>
+        </span>
+		<lawcos-search what-to-search="thing-a" slot="main"></lawcos-search>
+        <lawcos-card slot="main">
+            <h1>This is an example Lawcos Card</h1>
+            <p>Lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum</p>
+        </lawcos-card>
+		<lawcos-search what-to-search="thing-b" slot="bottom"></lawcos-search>
+	</lawcos-page>
+	<script type="module" src="../components/base.js"></script>
+    <script>
+        const wordDropdown = document.getElementById("word-dropdown");
+        wordDropdown.listToSelectFrom = [
+            "γλώσσα",
+            "language",
+            "Sprache",
+            "言葉"
+        ];
+        wordDropdown.getReadableSelectionName = (word) => word;
+        wordDropdown.onSelect = (word) => console.log(word);
+        const languageDropdown = document.getElementById("language-dropdown");
+        languageDropdown.listToSelectFrom = [
+            "English",
+            "Greek",
+            "German",
+            "Japanese"
+        ];
+        languageDropdown.getReadableSelectionName = (word) => word.split('').reverse().join('');
+        languageDropdown.onSelect = (lang) => console.log(word);
+    </script>
+</body>
+</html>

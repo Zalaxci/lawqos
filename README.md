@@ -1,28 +1,19 @@
-# About
+<h2 style="display: inline;">lawqos:</h2> <span style="margin-left: 0.5em; font-size: 1.1em">language acquisition & word querying, open source</span>
 
-This is a cool & simple dictionary (Ixalaz's Dictionary) made to search words in FreeDict.org XML files, since using their dictionary format is very restrictive (e.g there's no fuzzy or revers search).
+### Offline multilingual dictionary & SRS, right in your browser
 
-## Screenshots
+🔁 Download any of the 100s of available wikdict databases with few clicks, using 2 drop down menus to select the base & translation language 🌐
 
-![Search for the word "word" - English to Greek](screenshots/1.png)
-![Example sentences](screenshots/2.png)
+🔎 Fuzzily search words & see the results appear as fast as you type - using the reactivity & lightweightness of LitJS together with the speed of a database (SQLite) in your browser results update in a few milliseconds ✨
 
-## Why it can't (currently) be used
+📜 See wiktionary information & tatoeba examples by clicking a word entry to expand it 🖱️
 
-For now, IxaLang can't really be used since you need to download the xml dictionary files from freedict.org yourself and then split them up into multiple (currently 5) smaller parts. For example, the greek to english dictionary file has to be split up in to assets/dictionaries/ell-eng/1.tei, 2.tei, 3.tei, 4.tei and 5.tei . The reason is that there is no other way I could find apart from opening multiple files in parallel to search the dictionaries fast (as the user's typing) in GO.
+🎓 Study a word by adding to a SRS deck you create, using SQLite to store your cards (words you study) & FreeSRS to repeat them to increasing intervals in the most efficient way to remember them 🔄
 
-## The plan
+</> Use this in your own app, website or other project! All code written here is licesensed under the GPL3, allowing free use & modification as long as the same license is used for the derivative work, while the LitJS components are available as a javascript library, ***lawcos*** you are free to use. LitJS was choosen mainly as it requires no JavaScript bundler or compiler, allowing anyone to easily read the site's code using browser dev tools (or use it in their own JS file!), unlike intentionally obfuscated sites designed by large corporations. 🔗
 
-As I wrote in the description of the "actually, remove wails app" commit:
-
-> Silly of me - but the previous "major refactor" commit was in reality fully made 1.5 year ago. Back then I didn't know lower level programming languages or other GUI frameworks, so I thought GO Wails was the best option. However, it doesn't work on mobile, it isn't as mature as other ui frameworks, and it doesn't look and behave like a native (in linux a GTK or QT) app. For this reason, I think the future of IxaLang is a QT app using an XMLListModel.
-
-> In fact, there is another 2 major issues with this app/site as it stands: The website won't work well in production (with many users) due the file bottleneck, and (most importantly!) the dictionaries are currently not included in GitHub, nor can be downloaded. Hence, the plan is to rewrite the app in C/C++ (using web assembly on the browser to download dictionary files).
-
-For now (in the next few days), I will try to write a C header file to download dictionary files and search them with libxml2.
-
-Then I will create a simple QT App in cmd/v2, and build it with flatpak. Finally, the website will work offline, using webassembly, by compiling the C header file to work for IndexDB.
-
-## The future!
-
-In the long term (in 2025) I hope to add japanese romanji and chinese pinyin support (ability to input japanese / chinese words using english / latin keyboard layout), add wiktionary.org data (and port the examples from Go to C / C++) and implement flashcard capability (using FreeSRS), potentially with a syncing capability to sync data between the mobile and desktop (QT) app.
+### Credit:
+- https://wikdict.com for the dictionaries
+- https://sqlite.org/wasm/doc/trunk/index.md for the witchcraft of being able to use SQLite right in your browser
+- https://lit.dev/ for enabling the creation of complex Web Components easily
+- https://github.com/open-spaced-repetition for the Spaced Repetition System.
