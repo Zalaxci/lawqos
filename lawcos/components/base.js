@@ -1,6 +1,7 @@
-import { LitElement, css, html, repeat } from "https://cdn.jsdelivr.net/gh/lit/dist@3/all/lit-all.min.js";
+import * as L from "https://cdn.jsdelivr.net/gh/lit/dist@3/all/lit-all.min.js";
 
-const globalStyling = css`
+// CSS used for all elements
+const GLOBAL_CSS = L.css`
     * {
         box-sizing: border-box;
 
@@ -8,9 +9,7 @@ const globalStyling = css`
         line-height: 1.5;
         font-weight: 400;
 
-        color-scheme: light dark;
         color: rgba(255, 255, 255, 0.87);
-        background-color: rgb(16, 15, 17);
 
         font-synthesis: none;
         text-rendering: optimizeLegibility;
@@ -20,11 +19,12 @@ const globalStyling = css`
     }
 `;
 // User input components
-class LawcosSearch extends LitElement {
+export class LawcosSearch extends L.LitElement {
     static styles = [
-        globalStyling,
-        css`
+        GLOBAL_CSS,
+        L.css`
             input {
+				background-color: rgb(35, 35, 40);
                 margin: 1rem;
             }
         `
@@ -39,7 +39,7 @@ class LawcosSearch extends LitElement {
         },
     };
     render() {
-        return html`
+        return L.html`
             <input
                 type="text"
                 name="${this.whatToSearch}-search"
@@ -49,11 +49,12 @@ class LawcosSearch extends LitElement {
         `
     }
 }
-class LawcosDropdown extends LitElement {
+export class LawcosDropdown extends L.LitElement {
     static styles = [
-        globalStyling,
-        css`
+        GLOBAL_CSS,
+        L.css`
             select {
+				background-color: rgb(35, 35, 40);
                 border-radius: 0.3rem;
             }
         `
@@ -75,38 +76,38 @@ class LawcosDropdown extends LitElement {
     };
     render() {
         if (!Array.isArray(this.listToSelectFrom) || this.listToSelectFrom.length === 0)
-            return html`
+            return L.html`
                 <select
                     name="${this.whatToSelect}-selector"
                     id="${this.whatToSelect}-selector"
                     @input=${(e) => this.onSelect(e.target.value)}
                 ></select>
             `;
-        return html`
+        return L.html`
             <select
                 name="${this.whatToSelect}-selector"
                 id="${this.whatToSelect}-selector"
                 @input=${(e) => this.onSelect(e.target.value)}
             >
-                ${repeat(
+                ${L.repeat(
                     this.listToSelectFrom,
                     selectableString => selectableString,
-                    selectableString => html`
+                    selectableString => L.html`
                         <option value=${selectableString}>
                             ${this.getReadableSelectionName(selectableString)}
                         </option>
                     `
                 )}
             </select>
-        `
+        `;
     }
 }
 // Container components
-class LawcosPage extends LitElement {
+export class LawcosPage extends L.LitElement {
     static styles = [
-        globalStyling,
-        css`
-            .page-container {
+        GLOBAL_CSS,
+        L.css`
+            #page-container {
                 width: 100vw;
                 min-height: 100vh;
                 height: max(100vh, auto);
@@ -114,6 +115,7 @@ class LawcosPage extends LitElement {
                 flex-direction: column;
                 place-items: center;
                 text-align: center;
+                background-color: rgb(16, 15, 17);
             }
             ::slotted(*) {
                 width: 100vw;
@@ -125,8 +127,8 @@ class LawcosPage extends LitElement {
         `
     ];
     render() {
-        return html`
-            <div class="page-container">
+        return L.html`
+            <div id="page-container">
                 <slot name="top"></slot>
                 <slot name="main"></slot>
                 <slot name="bottom"></slot>
@@ -134,17 +136,17 @@ class LawcosPage extends LitElement {
         `
     }
 }
-class LawcosCard extends LitElement {
+export class LawcosCard extends L.LitElement {
     static styles = [
-        globalStyling,
-        css`
+        GLOBAL_CSS,
+        L.css`
             #clickable-container {
 			    position: relative;
 				width: min(90%, 400px);
 				margin: 1em;
 				padding: 0.5rem;
 				border-radius: 1rem;
-				background: rgb(35, 35, 40);
+				background-color: rgb(35, 35, 40);
 				cursor: pointer;
 				transition: transform 0.2s, height 0.5s, width 0.5s, background 0.5s;
                 /* Word wrap */
@@ -172,20 +174,21 @@ class LawcosCard extends LitElement {
         `
     ];
     render() {
-        return html`
+        return L.html`
             <div id="clickable-container">
                 <slot></slot>
             </div>
         `;
     }
     updated() {
-        this.renderRoot.querySelector('#clickable-container').onmousemove = (e) => {
+        const clickableContainer = this.renderRoot.querySelector('#clickable-container');
+        clickableContainer.onmousemove = (e) => {
             let rect = e.target.getBoundingClientRect();
             const hoverX = e.clientX - rect.left;
             const hoverY = e.clientY - rect.top;
-            e.target.style.setProperty('--hoverX', `${hoverX}px`)
-            e.target.style.setProperty('--hoverY', `${hoverY}px`)
-        }
+            clickableContainer.style.setProperty('--hoverX', `${hoverX}px`)
+            clickableContainer.style.setProperty('--hoverY', `${hoverY}px`)
+        };
     }
 }
 
@@ -194,4 +197,4 @@ customElements.define('lawcos-dropdown', LawcosDropdown);
 customElements.define('lawcos-page', LawcosPage);
 customElements.define('lawcos-card', LawcosCard);
 
-export { LitElement, css, html, repeat };
+export default L;

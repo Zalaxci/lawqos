@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>lawqos</title>
+	<style>
+		body {
+			margin: 0;
+            width: 100vw;
+            max-width: 100vw;
+		}
+	</style>
+</head>
+<body>
+	<lawcos-page>
+        <span slot="top">
+            <lawcos-search id="example-search" what-to-search="thing-a" slot="main"></lawcos-search>
+        </span>
+        <lawcos-entry id="example-entry" slot="main" word="Good morning" translations='["Καλημέρα", "こんにちは"]'></lawcos-entry>
+	</lawcos-page>
+	<script type="module" src="../components/entry.js"></script>
+    <script>
+        const lawcosEntry = document.getElementById("example-entry");
+        document.getElementById("example-search").onInput = searchText => lawcosEntry.word = searchText;
+    </script>
+</body>
+</html>
