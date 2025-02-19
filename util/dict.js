@@ -1,24 +1,18 @@
 // License: GPL3.0 or later
 // This file creates some JavaScript functions to simplify listing, downloading & querying dictionaries independent of their source (wikdict or freedict) & JS runtime
 // It also allows allows you to render the results (list of languages or words) to html or native widgets
-
 export class DownloadedDictionaryTracker {
-    // ! IMPLEMENTED BY THE CLASS INHERENTING THIS !
     MONOLINGUAL_DICTIONARIES_AVAILABLE = true;
-    // The URL to download dictionaries from, with "%s" as the placeholder for the language code or pair
-    DOWNLOAD_URL_FORMAT = "";
-    // API / Scraper method to retrieve an object with language codes as keys and arrays of language codes as values
-    async getTargetLangsForEachBaseLang() {
-        return ({});
-    }
-    // Method to list language codes or language pairs (strings) corresponding to downloaded dictionaries
-    async listDownloaded() {
-        return [];
-    }
-
-    __dictionaryIsDownloaded = {}
+    // VIRTUAL METHODS TO OVERRIDE:
+    // API / Scraper methods
+    // getDownloadURL(langCodeOrPair: String): String
+    // getTargetLangsForEachBaseLang(): Promise<Object<String, Array<String>>>
+    // Filesystem methods
+    // listDownloaded(): Promise<Array<String>>
+    // saveDictionary(langCodeOrPair: String, buff: ArrayBuffer): Promise<Bool>
+    __dictionaryIsDownloaded;
     constructor() {
-        this.__dictionaryIsDownloaded = {}
+        this.__dictionaryIsDownloaded = {};
     }
     async createDictionaryList() {
         const targetLangsForEachBaseLang = await this.getTargetLangsForEachBaseLang();
@@ -55,7 +49,6 @@ export class DownloadedDictionaryTracker {
         return [ baseLang, ...this.listTargetLanguages(baseLang).map(targetLang => `${baseLang}-${targetLang}`) ];
     }
     getDictionaryInfo(langQuery = "") {
-        const downloadURL = this.DOWNLOAD_URL_FORMAT.replace("%s", langQuery);
         // If the provided string is present as a key in this.__dictionaryIsDownloaded, it's a lang code corresponding to a (monolingual) dictionary
         if (langQuery.length > 0 && this.__dictionaryIsDownloaded.hasOwnProperty(langQuery)) {
             if (this.MONOLINGUAL_DICTIONARIES_AVAILABLE)
@@ -64,9 +57,11 @@ export class DownloadedDictionaryTracker {
                     isBilingual: false,
                     suggestLanguages: () => this.listLanguagePairs(langQuery),
                     isDownloaded: () => this.__dictionaryIsDownloaded[langQuery].isDownloaded === true,
-                    download: async (saveBufferToFS = (buff = new ArrayBuffer()) => false) => {
-                        this.__dictionaryIsDownloaded[langQuery].isDownloaded = await fetch(downloadURL).then(resp => resp.arrayBuffer()).then(saveBufferToFS);
-                    },
+                    download: async () => {
+                        const resp = await fetch(this.getDownloadURL(langQuery));
+                        const buff = await resp.arrayBuffer();
+                        return this.__dictionaryIsDownloaded[langQuery].isDownloaded = await this.saveDictionary(langQuery, buff);
+                    }
                 };
             return {
                 dictionaryExists: false,
@@ -86,8 +81,10 @@ export class DownloadedDictionaryTracker {
                 isBilingual: true,
                 suggestLanguages: () => [ langQuery ],
                 isDownloaded: () => this.__dictionaryIsDownloaded[baseLang].targetLangIsDownloaded[targetLang] === true,
-                download: async (saveBufferToFS = (buff = new ArrayBuffer()) => false) => {
-                    this.__dictionaryIsDownloaded[baseLang].targetLangIsDownloaded[targetLang] = await fetch(downloadURL).then(resp => resp.arrayBuffer()).then(saveBufferToFS);
+                download: async () => {
+                    const resp = await fetch(this.getDownloadURL(langQuery));
+                    const buff = await resp.arrayBuffer();
+                    return this.__dictionaryIsDownloaded[baseLang].targetLangIsDownloaded[targetLang] = await this.saveDictionary(langQuery, buff);
                 }
             };
         // If the base lang has a corresponding dictionary but the provided language pair doesn't, suggest target languages
@@ -100,28 +97,22 @@ export class DownloadedDictionaryTracker {
     }
 }
 export class DictionarySelectorAndSearcher extends DownloadedDictionaryTracker {
-    // ! IMPLEMENTED BY THE CLASS INHERENTING THIS !
-    MINIMUM_WORD_BYTES = 3;
-    // Filesystem / DB implementation and dictionary format dependent methods to list downloaded dictionaries, save a dictionary (array buffer) & search a word or phrase to get results
-    async saveDictionary(lang = "", buff = new ArrayBuffer()) {
-        return false;
-    }
-    async openDictionary(lang = "", isBilingual = true) {}
-    async searchDictionary(wordOrPhrase = "", isBilingual = true) {
-        return [];
-    }
-
+    ENCODER = new TextEncoder();
+    MIN_WORD_BYTES = 3;
+    // VIRTUAL METHODS TO OVERRIDE:
+    // openDictionary(lang: String): Promise
+    // searchDictionary(wordOrPhrase: String, isBilingual: bool): Promise<Array>
     __selectedLang = "";
     __prevSearchResults = {};
     async query(userInput = "") {
         // Ensure dictionary list is created
         let availableBaseLangs = this.listBaseLanguages();
         if (availableBaseLangs.length === 0) {
-            await this.createDictionaryList()
+            await this.createDictionaryList();
             availableBaseLangs = this.listBaseLanguages();
         }
-        // Remove whitespaces from the start and end
-        const trimmedUserInput = userInput.trim();
+        // Remove whitespaces from the start
+        const trimmedUserInput = userInput.trimStart();
         // If user typed no space, user input is a language code - return dictionary info (dictionaryExists & suggestions)
         if (!trimmedUserInput.includes(" ")) {
             const { dictionaryExists, suggestLanguages } = this.getDictionaryInfo(trimmedUserInput);
@@ -136,14 +127,14 @@ export class DictionarySelectorAndSearcher extends DownloadedDictionaryTracker {
         if (!dictionaryExists)
             throw new Error(`dictionary for language code or language pair ${selectedLanguage} does not exist`);
         if (!(isDownloaded instanceof Function) || !(download instanceof Function))
-            throw new TypeError("the functions to check if dictionary is downloaded & download it if not are not present - this is probably a programming error")
+            throw new TypeError("the functions to check if dictionary is downloaded & download it if not are not present - this is probably a programming error");
         if (!isDownloaded()) return {
             dictionaryExists,
+            download,
             suggestions: [],
-            downloadDictionary: () => download((buff) => this.saveDictionary(selectedLanguage, buff)),
         };
-        if (wordOrPhrase.length < this.MINIMUM_WORD_BYTES)
-            throw new Error(`expected a word to search that is at least ${this.MINIMUM_WORD_BYTES} long`);
+        if (this.ENCODER.encode(wordOrPhrase).byteLength < this.MIN_WORD_BYTES)
+            throw new Error(`expected a word to search that is at least ${this.MIN_WORD_BYTES} bytes long`);
         if (selectedLanguage !== this.__selectedLang) {
             await this.openDictionary(selectedLanguage, isBilingual);
             this.__prevSearchResults = {};
@@ -159,21 +150,19 @@ export class DictionarySelectorAndSearcher extends DownloadedDictionaryTracker {
     }
 }
 export class DictionaryResultRenderer {
-    // ! IMPLEMENTED BY THE CLASS INHERENTING THIS !
-    renderAutocomplete(suggestions = []) {}
-    renderSearchResults(searchResults = []) {}
-    renderDictionaryDownloader(downloadDictionary = async () => {}) {}
-    renderCombined(autoCompleteWidget, downloaderOrSearchResultsWidget) {}
-
-    renderDictionary(queryResults) {
-        console.log(queryResults);
+    // VIRTUAL METHODS TO OVERRIDE:
+    // renderAutocomplete(suggestions: Array): NativeWidgetOrHTML
+    // renderSearchResults(suggestions: Array): NativeWidgetOrHTML
+    // renderDictionaryDownloader(downloadDictionary: Function<Promise<bool>>, triggerAppRerender: Function): NativeWidgetOrHTML
+    // renderCombined(autoCompleteWidget: NativeWidgetOrHTML, downloaderOrSearchResultsWidget: NativeWidgetOrHTML): NativeWidgetOrHTML
+    renderDictionary(queryResults, triggerAppRerender) {
         if (queryResults.hasOwnProperty("searchResults")) return this.renderCombined(
             this.renderAutocomplete(queryResults.suggestions),
             this.renderSearchResults(queryResults.searchResults),
         )
-        if (queryResults.hasOwnProperty("downloadDictionary")) return this.renderCombined(
+        if (queryResults.hasOwnProperty("download")) return this.renderCombined(
             this.renderAutocomplete(queryResults.suggestions),
-            this.renderDictionaryDownloader(queryResults.downloadDictionary),
+            this.renderDictionaryDownloader(queryResults.download, triggerAppRerender),
         )
         return this.renderAutocomplete(queryResults.suggestions);
     }

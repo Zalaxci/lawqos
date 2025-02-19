@@ -4,39 +4,7 @@ import { Task } from 'https://cdn.jsdelivr.net/npm/@lit/task@1/+esm'
 import { DictionaryResultRenderer, DictionarySelectorAndSearcher } from "../../util/dict.js";
 import { createAsyncWorker } from "../../util/workers.js";
 
-class WikdictSelectorAndSearcher extends DictionarySelectorAndSearcher {
-    LIST_URL = "https://wikdict.zalaxci.workers.dev";
-    DOWNLOAD_URL_FORMAT = "https://wikdict.zalaxci.workers.dev/%s.sqlite3";
-    postMsgAndAwaitResponse;
-    async getTargetLangsForEachBaseLang() {
-        if (!this.postMsgAndAwaitResponse) this.postMsgAndAwaitResponse = await createAsyncWorker("../../util/workers/sqlite.js");
-        return fetch(this.LIST_URL).then(resp => resp.json());
-    }
-    async listDownloaded() {
-        return await this.postMsgAndAwaitResponse("list", "/wikdict").then(
-            files => files.map(
-                fileStr => fileStr.replace(".sqlite3", "").replace("/", "")
-            )
-        );
-    }
-    async saveDictionary(lang, buff) {
-        await this.postMsgAndAwaitResponse("download", [`/${lang}.sqlite3`, buff]);
-    }
-    async openDictionary(lang, isBilingual) {
-        await this.postMsgAndAwaitResponse("open", `/${lang}.sqlite3`);
-    }
-    async searchDictionary(wordOrPhrase = "") {
-        await this.postMsgAndAwaitResponse("prepare", "select * from simple_translation where written_rep like '%' || ? || '%' or trans_list like '%' || ? || '%';");
-        return this.postMsgAndAwaitResponse("query", [wordOrPhrase, wordOrPhrase]).then(results => results.map(
-            ({ written_rep, trans_list, rel_importance }) => ({
-                word: written_rep,
-                translations: trans_list.split(" | "),
-                significance: rel_importance,
-            })
-        ));
-    }
-}
-class WikdictRenderer extends DictionaryResultRenderer {
+class LitDictionaryRenderer extends DictionaryResultRenderer {
     renderAutocomplete(suggestions = []) {
         // TODO: Create suggestion element
         // return suggestions.map(suggestion => L.html`<lawcos-textbox .text=${suggestion}></lawcos-textbox>`);
@@ -47,23 +15,71 @@ class WikdictRenderer extends DictionaryResultRenderer {
             <lawcos-entry .word=${searchResult.word} .translations=${searchResult.translations}></lawcos-entry>
         `);
     }
-    renderDictionaryDownloader(downloadDictionary) {
+    renderDictionaryDownloader(downloadDictionary, triggerAppRerender) {
         // TODO: Improve this
-        return L.html`<button @click=${downloadDictionary}>Download!</button>`;
+        async function downloadAndRerender() {
+            const success = await downloadDictionary();
+            if (success) triggerAppRerender();
+        }
+        return L.html`<div id="downloader"><button @click=${downloadAndRerender}>Download!</button></div>`;
     }
-    renderCombined(autoCompleteWidget, downloaderOrSearchResultsWidget) {
+    renderCombined(autoCompleteHTML, downloaderOrSearchResultsHTML) {
         return L.html`
             <div id="entries-container">
-                ${autoCompleteWidget}
-                ${downloaderOrSearchResultsWidget}
+                <div id="autocomplete">${autoCompleteHTML}</div>
+                ${downloaderOrSearchResultsHTML}
             </div>
         `;
     }
 }
+const RENDERER = new LitDictionaryRenderer();
+class WikdictSelectorAndSearcher extends DictionarySelectorAndSearcher {
+    SCRAPER_URL = "https://wikdict.zalaxci.workers.dev/";
+    postMsgAndAwaitResponse;
+    getDownloadURL(langCodeOrPair = "") {
+        return this.SCRAPER_URL + langCodeOrPair + ".sqlite3";
+    }
+    async getTargetLangsForEachBaseLang() {
+        if (!this.postMsgAndAwaitResponse) this.postMsgAndAwaitResponse = await createAsyncWorker("../../util/workers/sqlite.js");
+        return fetch(this.SCRAPER_URL).then(resp => resp.json());
+    }
+    async listDownloaded() {
+        return this.postMsgAndAwaitResponse("l", "/wikdict").then(
+            files => files.map(
+                fileStr => fileStr.replace(".sqlite3", "").replace("/", "")
+            )
+        );
+    }
+    async saveDictionary(lang, buff) {
+        return await this.postMsgAndAwaitResponse("s", [`/${lang}.sqlite3`, buff]) > 0;
+    }
+    async openDictionary(lang) {
+        await this.postMsgAndAwaitResponse("o", `/${lang}.sqlite3`);
+    }
+    async searchDictionary(wordOrPhrase = "") {
+        const dbResults = await this.postMsgAndAwaitResponse("q", [
+            "select * from simple_translation where written_rep like '%' || ? || '%' or trans_list like '%' || ? || '%';",
+            wordOrPhrase,
+            wordOrPhrase,
+        ]);
+        return dbResults.map(
+            ({ written_rep, trans_list, rel_importance }) => ({
+                word: written_rep,
+                translations: trans_list.split(" | "),
+                significance: rel_importance,
+            })
+        ).sort(({ word: wordA, significance: significanceA }, { word: wordB, significance: significanceB}) => {
+            if (wordA.length < wordB.length) return -1;
+            if (wordA.length > wordB.length) return 1;
+            if (significanceA < significanceB) return 1;
+            if (significanceA > significanceB) return -1;
+            return 0;
+        });
+    }
+}
+const WD = new WikdictSelectorAndSearcher();
 export class LawcosWikdict extends L.LitElement {
-    __searcher;
-    __renderer;
-    __databaseTask;
+    __databaseTask = new Task(this, ([ userInput ]) => WD.query(userInput), () => [ this.userInput ]);
     static styles = L.css`
         #entries-container {
 			max-width: 1350px;
@@ -89,18 +105,12 @@ export class LawcosWikdict extends L.LitElement {
             attribute: "user-input"
         },
     }
-    constructor() {
-        super();
-        this.__searcher = new WikdictSelectorAndSearcher();
-        this.__renderer = new WikdictRenderer();
-        this.__databaseTask = new Task(this, ([ userInput ]) => this.__searcher.query(userInput), () => [ this.userInput ]);
-    }
     render() {
         return this.__databaseTask.render({
             pending: () => L.html`<h2>Loading...</h2>`,
             error: err => L.html`<h3 class="error">Error(s): ${err}</h3>`,
-            complete: (queryResults) => this.__renderer.renderDictionary(queryResults)
-        })
+            complete: queryResults => RENDERER.renderDictionary(queryResults, () => this.__databaseTask.run([ this.userInput ])),
+        });
     }
 }
 
