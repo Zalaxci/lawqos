@@ -40,7 +40,11 @@ class WikdictSelectorAndSearcher extends DictionarySelectorAndSearcher {
         return this.SCRAPER_URL + langCodeOrPair + ".sqlite3";
     }
     async getTargetLangsForEachBaseLang() {
-        if (!this.postMsgAndAwaitResponse) this.postMsgAndAwaitResponse = await createAsyncWorker("../../util/workers/sqlite.js");
+        if (!this.postMsgAndAwaitResponse) {
+            let basePageURL = new URL(location.href).origin;
+            if (basePageURL.includes("github.io")) basePageURL += "/lawqos";
+            this.postMsgAndAwaitResponse = await createAsyncWorker(basePageURL + "/util/workers/sqlite.js");
+        }
         return fetch(this.SCRAPER_URL).then(resp => resp.json());
     }
     async listDownloaded() {
