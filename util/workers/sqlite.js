@@ -3,7 +3,6 @@ let poolUtil = null;
 let db = null;
 let dbName = '';
 let statement = null;
-let statementStr = '';
 self.onmessage = async ({ data }) => {
     // A worker message contains a unique number ID, the action to perform and a parameter
     const [ id, action, parameter ] = data;
@@ -33,9 +32,7 @@ self.onmessage = async ({ data }) => {
                     }
                 }
                 console.log("listing all files");
-                const fileList = poolUtil.getFileNames();
-                const dbNameList = fileList.map(fileStr => fileStr.replace(".sqlite3", ""));
-                self.postMessage([id, 0, dbNameList]);
+                self.postMessage([id, 0, poolUtil.getFileNames()]);
             } catch (err) {
                 self.postMessage([id, -1, err]);
             }
@@ -62,9 +59,11 @@ self.onmessage = async ({ data }) => {
                 return;
             }
             try {
+                console.log("available files", poolUtil.getFileNames());
                 console.log("opening file", parameter);
                 db = new poolUtil.OpfsSAHPoolDb(parameter);
                 dbName = parameter;
+                console.log("opened file", parameter, id);
                 self.postMessage([id, 0, ""]);
             } catch (err) {
                 self.postMessage([id, -1, err]);
@@ -75,14 +74,9 @@ self.onmessage = async ({ data }) => {
                 self.postMessage([id, -1, "attempted to prepare a statement while no database file has been loaded"]);
                 return;
             }
-            if (statementStr === parameter) {
-                self.postMessage([id, 0, ""]);
-                return;
-            }
             try {
                 console.log("preparing statement", parameter);
                 statement = db.prepare(parameter);
-                statementStr = parameter;
                 self.postMessage([id, 0, ""]);
             } catch (err) {
                 self.postMessage([id, -1, err]);
@@ -95,7 +89,11 @@ self.onmessage = async ({ data }) => {
             }
             try {
                 console.log("querying db", parameter);
-                const results = statement.bind(parameter).get();
+                let results = [];
+                statement.bind(parameter);
+                while (statement.step()) results.push(statement.get({}));
+                console.log(results);
+                statement.finalize();
                 self.postMessage([id, 0, results]);
             } catch (err) {
                 self.postMessage([id, -1, err]);

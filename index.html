@@ -7,15 +7,24 @@
 	<style>
 		body {
 			margin: 0;
+            width: 100vw;
+            max-width: 100vw;
 		}
+        input {
+            width: min(400px, 90vw);
+        }
 	</style>
 </head>
 <body>
 	<lawcos-page>
-		<span slot="top">Look up a word from <lawcos-dropdown whatToSelect="base-lang"></lawcos-dropdown> to <lawcos-dropdown whatToSelect="target-lang"></lawcos-dropdown></span>
-		<lawcos-search whatToSelect="word" slot="top"></lawcos-search>
-		<lawcos-wordstudy slot="main"></lawcos-wordstudy>
+        <input slot="top" id="searchbar" placeholder="Search wikdict!~"/>
+        <lawcos-wikdict slot="main" user-input=""></lawcos-wikdict>
 	</lawcos-page>
-	<script type="module" src="index.js"></script>
+	<script type="module" src="lawcos/components/dictionaries.js"></script>
+    <script>
+        const searchbar = document.getElementById("searchbar");
+        const wd = document.querySelector("lawcos-wikdict");
+        searchbar.oninput = () => wd.userInput = searchbar.value;
+    </script>
 </body>
 </html>

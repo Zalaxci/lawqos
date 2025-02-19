@@ -80,7 +80,6 @@ export class DownloadedDictionaryTracker {
         };
         // If it can be split up to a base & target lang & this.__dictionaryIsDownloaded[baseLang].targetLangIsDownloaded[targetLang] exists it's a bilingual dictionary's lang pair
         const [ baseLang, targetLang ] = langQuery.split("-");
-        console.log(baseLang, targetLang);
         if (this.__dictionaryIsDownloaded.hasOwnProperty(baseLang) && this.__dictionaryIsDownloaded[baseLang].targetLangIsDownloaded.hasOwnProperty(targetLang))
             return {
                 dictionaryExists: true,
@@ -115,7 +114,6 @@ export class DictionarySelectorAndSearcher extends DownloadedDictionaryTracker {
     __selectedLang = "";
     __prevSearchResults = {};
     async query(userInput = "") {
-        console.log(userInput);
         // Ensure dictionary list is created
         let availableBaseLangs = this.listBaseLanguages();
         if (availableBaseLangs.length === 0) {
@@ -168,6 +166,7 @@ export class DictionaryResultRenderer {
     renderCombined(autoCompleteWidget, downloaderOrSearchResultsWidget) {}
 
     renderDictionary(queryResults) {
+        console.log(queryResults);
         if (queryResults.hasOwnProperty("searchResults")) return this.renderCombined(
             this.renderAutocomplete(queryResults.suggestions),
             this.renderSearchResults(queryResults.searchResults),

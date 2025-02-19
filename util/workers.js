@@ -10,7 +10,8 @@ export function createAsyncWorker(src) {
     }
     return function(...msgData) {
         cancelMsgReceiver("a new request to the worker has been made, so it's impossible to receive the response from all previous ones");
-        const messageId = messagesSent++;
+        const messageId = messagesSent;
+        console.log(messageId, msgData);
         const responsePromise = new Promise((res, rej) => {
             worker.onmessage = ({ data }) => {
                 const [ resultId, responseCode, responseData ] = data;
@@ -18,8 +19,10 @@ export function createAsyncWorker(src) {
                 if (responseCode === 0) res(responseData);
                 rej(responseData);
             }
+            cancelMsgReceiver = (reason) => rej(reason)
         });
         worker.postMessage([messageId, ...msgData]);
+        messagesSent++;
         return responsePromise;
     }
 }

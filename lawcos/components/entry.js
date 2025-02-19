@@ -50,15 +50,11 @@ export class LawcosEntry extends Base.LawcosCard {
                     </ruby>
                 </div>
                 <ol>
-                    ${L.repeat(
-                        this.translations,
-                        translation => translation, // Use the translation word as a key since it should be unique
-                        translation => L.html`
-                            <li>
-                                <ruby>${translation}<rt>${this.getPronounciation(translation) || ""}</rt></ruby>
-                            </li>
-                        `
-                    )}
+                    ${this.translations.map(translation => L.html`
+                        <li>
+                            <ruby>${translation}<rt>${this.getPronounciation(translation) || ""}</rt></ruby>
+                        </li>
+                    `)}
                 </ol>
             </div>
         `;

@@ -13,22 +13,25 @@ class WikdictSelectorAndSearcher extends DictionarySelectorAndSearcher {
         return fetch(this.LIST_URL).then(resp => resp.json());
     }
     async listDownloaded() {
-        return this.postMsgAndAwaitResponse("list", "/wikdict");
+        return await this.postMsgAndAwaitResponse("list", "/wikdict").then(
+            files => files.map(
+                fileStr => fileStr.replace(".sqlite3", "").replace("/", "")
+            )
+        );
     }
     async saveDictionary(lang, buff) {
-        console.log(buff);
-        await this.postMsgAndAwaitResponse("download", [`${lang}.sqlite3`, buff]);
+        await this.postMsgAndAwaitResponse("download", [`/${lang}.sqlite3`, buff]);
     }
     async openDictionary(lang, isBilingual) {
         await this.postMsgAndAwaitResponse("open", `/${lang}.sqlite3`);
-        await this.postMsgAndAwaitResponse("prepare", "select * from simple_translation where written_rep like %?% or trans_list like %?%;");
     }
     async searchDictionary(wordOrPhrase = "") {
-        return this.postMsgAndAwaitResponse("search", [wordOrPhrase, wordOrPhrase]).then(results => results.map(
-            ({ written_rep, trans_list, significance }) => ({
+        await this.postMsgAndAwaitResponse("prepare", "select * from simple_translation where written_rep like '%' || ? || '%' or trans_list like '%' || ? || '%';");
+        return this.postMsgAndAwaitResponse("query", [wordOrPhrase, wordOrPhrase]).then(results => results.map(
+            ({ written_rep, trans_list, rel_importance }) => ({
                 word: written_rep,
-                translations: trans_list,
-                significance
+                translations: trans_list.split(" | "),
+                significance: rel_importance,
             })
         ));
     }
