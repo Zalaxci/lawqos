@@ -1,3 +1,4 @@
+// License: GPL3.0 or later
 import L, * as Base from "./base.js";
 
 export class LawcosEntry extends Base.LawcosCard {

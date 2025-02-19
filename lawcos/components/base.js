@@ -1,3 +1,4 @@
+// License: GPL3.0 or later
 import * as L from "https://cdn.jsdelivr.net/gh/lit/dist@3/all/lit-all.min.js";
 
 // CSS used for all elements
