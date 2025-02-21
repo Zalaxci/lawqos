@@ -72,7 +72,7 @@ export class DownloadedDictionaryTracker {
                     isBilingual: false,
                     suggestionsTitle: `Translate from ${this.getReadableLangName(langQuery)} to...`,
                     getSuggestions: () => this.suggestLanguagePairs(langQuery),
-                    getDownloadInfo: () => this.getDownloadInfo(baseLang),
+                    getDownloadInfo: () => this.getDownloadInfo(langQuery),
                     isDownloaded: () => this.__dictionaryIsDownloaded[langQuery].isDownloaded === true,
                     download: async () => {
                         const resp = await fetch(this.getDownloadURL(langQuery));

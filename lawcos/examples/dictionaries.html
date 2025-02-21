@@ -10,21 +10,22 @@
             width: 100vw;
             max-width: 100vw;
 		}
-        input {
-            width: min(400px, 90vw);
+        #searchbar {
+            margin-top: 30px;
+            width: min(600px, 95vw);
         }
 	</style>
 </head>
 <body>
 	<lawcos-page>
-        <input slot="top" id="searchbar" placeholder="Search wikdict!~"/>
+        <lawcos-search slot="top" id="searchbar" where-to-search="wikdict" what-to-search="a language pair followed by a word"></lawcos-search>
         <lawcos-wikdict slot="main" user-input=""></lawcos-wikdict>
 	</lawcos-page>
-	<script type="module" src="../components/dictionaries.js"></script>
+	<script type="module" src="lawcos/components/dictionaries.js"></script>
     <script>
         const searchbar = document.getElementById("searchbar");
         const wd = document.querySelector("lawcos-wikdict");
-        searchbar.oninput = () => wd.userInput = searchbar.value;
+        searchbar.onInput = (userInput = "") => wd.userInput = userInput;
     </script>
 </body>
 </html>

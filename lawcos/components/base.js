@@ -25,14 +25,21 @@ export class LawcosSearch extends L.LitElement {
         GLOBAL_CSS,
         L.css`
             input {
+                width: 100%;
 				background-color: rgb(35, 35, 40);
-                margin: 1rem;
+                border: 0;
+                border-radius: 0.5rem;
+                font-size: 1rem;
             }
         `
     ];
     static properties = {
+        whereToSearch: {
+            type: String, // e.g. wikdict
+            attribute: "where-to-search"
+        },
         whatToSearch: {
-            type: String, // What to search, e.g. "word" or "sentence"
+            type: String, // e.g. "a word" or "a language pair followed by a word"
             attribute: "what-to-search"
         },
         onInput: {
@@ -43,8 +50,8 @@ export class LawcosSearch extends L.LitElement {
         return L.html`
             <input
                 type="text"
-                name="${this.whatToSearch}-search"
-                placeholder="Input the ${this.whatToSearch} to search.."
+                name="${this.whereToSearch}-search"
+                placeholder="Input ${this.whatToSearch} to search in ${this.whereToSearch}..."
                 @input=${(e) => this.onInput(e.target.value)}
             />
         `
