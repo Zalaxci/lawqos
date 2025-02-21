@@ -5,31 +5,41 @@ import { DictionaryResultRenderer, DictionarySelectorAndSearcher } from "../../u
 import { createAsyncWorker } from "../../util/workers.js";
 
 class LitDictionaryRenderer extends DictionaryResultRenderer {
-    renderAutocomplete(suggestions = []) {
+    renderAutocomplete(suggestionsTitle, getSuggestions) {
         // TODO: Create suggestion element
         // return suggestions.map(suggestion => L.html`<lawcos-textbox .text=${suggestion}></lawcos-textbox>`);
-        return suggestions.map(suggestion => L.html`<span>${suggestion}</span>`);
+        return L.html`
+            <div id="autocomplete">
+                <h2>${suggestionsTitle}</h2>
+                ${getSuggestions().map(suggestion => L.html`<button>${suggestion}</button>`)}
+            </div>
+        `;
     }
     renderSearchResults(searchResults = []) {
-        return searchResults.map(searchResult => L.html`
-            <lawcos-entry .word=${searchResult.word} .translations=${searchResult.translations}></lawcos-entry>
-        `);
+        return L.html`
+            <div id="entries">
+                ${searchResults.map(searchResult => L.html`
+                    <lawcos-entry .word=${searchResult.word} .translations=${searchResult.translations}></lawcos-entry>
+                `)}
+            </div>
+        `;
     }
-    renderDictionaryDownloader(downloadDictionary, triggerAppRerender) {
-        // TODO: Improve this
+    renderDictionaryDownloader(getDownloadInfo, downloadDictionary, triggerAppRerender) {
         async function downloadAndRerender() {
             const success = await downloadDictionary();
             if (success) triggerAppRerender();
         }
-        return L.html`<div id="downloader"><button @click=${downloadAndRerender}>Download!</button></div>`;
-    }
-    renderCombined(autoCompleteHTML, downloaderOrSearchResultsHTML) {
+        const [ title, description ] = getDownloadInfo();
         return L.html`
-            <div id="entries-container">
-                <div id="autocomplete">${autoCompleteHTML}</div>
-                ${downloaderOrSearchResultsHTML}
+            <div id="downloader">
+                <h2>${title}</h2>
+                <p>${description}</p>
+                <button @click=${downloadAndRerender}>Download!</button>
             </div>
         `;
+    }
+    renderCombined(autoCompleteHTML, searchResultsOrDefaultWidget) {
+        return L.html`${autoCompleteHTML}${searchResultsOrDefaultWidget}`;
     }
 }
 const RENDERER = new LitDictionaryRenderer();
@@ -85,7 +95,26 @@ const WD = new WikdictSelectorAndSearcher();
 export class LawcosWikdict extends L.LitElement {
     __databaseTask = new Task(this, ([ userInput ]) => WD.query(userInput), () => [ this.userInput ]);
     static styles = L.css`
-        #entries-container {
+        button {
+            background-color: steelblue;
+            color: white;
+            padding: 0.2rem;
+            margin: 0.2rem;
+            border: 0;
+            border-radius: 1rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        #error {
+            color: orange;
+        }
+        #downloader, #autocomlete, #entries {
+            margin-top: 10px;
+        }
+        #autocomplete {
+            line-height: 2.0rem;
+        }
+        #entries {
 			max-width: 1350px;
 			margin-left: auto;
 			margin-right: auto;
@@ -93,15 +122,6 @@ export class LawcosWikdict extends L.LitElement {
 			flex-wrap: wrap;
 			place-content: center;
 		}
-        span {
-            background-color: darkslategrey;
-            padding: 0.2em;
-            margin: 0.3em;
-            border-radius: 0.5em;
-        }
-        .error {
-            color: orange;
-        }
     `;
     static properties = {
         userInput: {
@@ -112,8 +132,12 @@ export class LawcosWikdict extends L.LitElement {
     render() {
         return this.__databaseTask.render({
             pending: () => L.html`<h2>Loading...</h2>`,
-            error: err => L.html`<h3 class="error">Error(s): ${err}</h3>`,
-            complete: queryResults => RENDERER.renderDictionary(queryResults, () => this.__databaseTask.run([ this.userInput ])),
+            error: err => L.html`<h3 id="error">Error(s): ${err}</h3>`,
+            complete: queryResults => RENDERER.renderDictionary(
+                queryResults,
+                () => this.__databaseTask.run([ this.userInput ]),
+                L.html`<slot></slot>`,
+            ),
         });
     }
 }
